@@ -34,6 +34,7 @@ const HOTKEY_CATEGORIES = [
       { action: "pane.close", name: "Close Pane", desc: "Close active workspace pane" },
       { action: "pane.zoom", name: "Toggle Zoom", desc: "Toggle maximize / restore active pane" },
       { action: "layout.switch", name: "Switch Layout", desc: "Switch active display layout" },
+      { action: "mod.open:company-layouts", name: "Office Layouts", desc: "Arrange this tab's panes: cubicles, open plan, stand-up, corner office, boardroom" },
       { action: "pane.go:left", name: "Focus Navigation", desc: "Navigate focus between adjacent panes", customKeys: ["alt-h / j / k / l", "alt-left / right"] },
     ],
   },

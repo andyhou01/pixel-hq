@@ -25,6 +25,9 @@ const PIXEL_HQ_FILES = [
   "mods/company-pane/zoom.svg",
   "mods/company-tabs/main.js",
   "mods/company-tabs/mod.json",
+  "mods/company-layouts/main.js",
+  "mods/company-layouts/mod.json",
+  "mods/company-layouts/arrange.py",
   "mods/company-spaces/main.js",
   "mods/company-spaces/mod.json",
   "mods/company-status/main.js",
@@ -92,7 +95,8 @@ export async function checkPixelHqUpdate(notifyUser = true) {
 
     const num = (v) => String(v).split(".").map((n) => parseInt(n, 10) || 0);
     const [a, b] = [num(latest.version), num(mine?.version)];
-    const newer = [0, 1, 2].map((i) => (a[i] ?? 0) - (b[i] ?? 0)).find((d) => d !== 0) > 0;
+    // Every part counts: the fork bumps a 4th (1.8.4 → 1.8.4.1).
+    const newer = Array.from({ length: Math.max(a.length, b.length) }, (_, i) => (a[i] ?? 0) - (b[i] ?? 0)).find((d) => d !== 0) > 0;
     if (!newer) {
       setShared("pixel-hq.new-version", null);
       return null;

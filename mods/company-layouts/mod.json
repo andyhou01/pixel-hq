@@ -1,0 +1,10 @@
+{
+  "place": "none",
+  "title": "Office Layouts",
+  "overlay": {
+    "kind": "dialog",
+    "frame": "none",
+    "width": 640,
+    "height": 260
+  }
+}

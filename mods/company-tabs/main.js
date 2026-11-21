@@ -1,6 +1,56 @@
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex, ScrollHandle } from "gpui-base";
-import { spaces, panes, run, openOverlay, theme, window, shared, layout, settings } from "herdr";
+import { spaces, panes, machines, focused, nextCommand, run, openOverlay, notify, theme, window, shared, setShared, layout, settings, exec, appHome, checking, readTextFile, writeTextFile } from "herdr";
+
+// Office layouts (mods/company-layouts): tabs whose seating plan is kept, by tab id:
+// { preset, order: [pane ids], lead, machine }.
+const KEPT = "pixel-hq.office-layouts";
+const PRESETS = ["cubicles", "open-plan", "standup", "corner-office", "boardroom"];
+const LEAD_PRESETS = ["corner-office", "boardroom"];
+const LAYOUTS_KEY = "ctrl-shift-l";
+const LAYOUTS_ACTION = "mod.open:company-layouts";
+
+// Same as company-layouts: runs its arrange.py for one tab, machine ids made local and back.
+async function arrangeTab(tab, preset, { order, lead, machine } = {}) {
+  const local = (id) => (machine && id?.startsWith(`${machine}/`) ? id.slice(machine.length + 1) : id);
+  const args = [`${appHome()}/mods/company-layouts/arrange.py`, local(tab), preset];
+  if (order?.length) args.push("--order", order.map(local).join(","));
+  if (lead) args.push("--lead", local(lead));
+  if (machine) args.push("--on", machine);
+  let failure = "python3 is not installed";
+  for (const python of ["python3", "python"]) {
+    try {
+      const r = await exec(python, args, { timeout: 20000 });
+      const out = JSON.parse(r.stdout.trim().split("\n").pop() || "{}");
+      if (!out.ok) return { error: out.error ?? (r.stderr.trim() || "could not arrange this tab") };
+      if (machine) out.order = out.order.map((id) => `${machine}/${id}`);
+      return out;
+    } catch (err) {
+      failure = String(err?.message ?? err);
+    }
+  }
+  return { error: failure };
+}
+
+// Ctrl+Shift+L opens Office layouts, unless the key already does something else
+// (Herdr binds it to layout.switch on Linux and Windows).
+async function ensureLayoutsHotkey() {
+  try {
+    const path = `${appHome()}/keys.json`;
+    const raw = await readTextFile(path).catch(() => null);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!parsed.global || (parsed.global[LAYOUTS_KEY] ?? LAYOUTS_ACTION) !== LAYOUTS_ACTION) return;
+    let changed = false;
+    for (const section of ["global", "terminal"]) {
+      if (parsed[section] && !parsed[section][LAYOUTS_KEY]) {
+        parsed[section][LAYOUTS_KEY] = LAYOUTS_ACTION;
+        changed = true;
+      }
+    }
+    if (changed) await writeTextFile(path, JSON.stringify(parsed, null, 2), raw);
+  } catch {}
+}
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -71,6 +121,76 @@ export default class Tabs extends View {
     try { this.panels = JSON.parse(localStorage.getItem("panels") ?? "{}"); } catch { this.panels = {}; }
     if (!this.panels || typeof this.panels !== "object" || Array.isArray(this.panels)) this.panels = {};
     this.swipe = { acc: 0, steps: 0, at: 0, last: 0 };
+    this.arranging = new Set();
+    if (!checking()) cx.spawn(async () => ensureLayoutsHotkey());
+    // Render runs only when the window draws, so kept layouts are checked on a timer: an agent
+    // that joins while Herdr is behind another app is seated within a second all the same.
+    cx.timer.every(1000, (cx) => this.keepLayouts(cx));
+    // company-tabs.layout-<preset> arranges the shown tab and keeps it; layout-off stops keeping.
+    cx.spawn(async (cx) => {
+      for (;;) {
+        const c = String(await nextCommand());
+        if (c === "layout-off") this.officeLayout(null);
+        else if (c.startsWith("layout-") && PRESETS.includes(c.slice(7))) this.officeLayout(c.slice(7));
+        this.keepLayouts(cx);
+        cx.notify();
+      }
+    });
+  }
+
+  officeLayout(preset) {
+    const f = focused();
+    const space = spaces().find((s) => s.id === f?.space) ?? spaces().find((s) => s.active);
+    const tab = space?.tabs.find((t) => t.id === f?.tab) ?? space?.tabs.find((t) => t.active);
+    if (!tab) return;
+    const kept = { ...(shared(KEPT) ?? {}) };
+    delete kept[tab.id];
+    if (!preset) {
+      setShared(KEPT, kept);
+      return;
+    }
+    const mine = panes().filter((p) => p.tab === tab.id);
+    const lead = LEAD_PRESETS.includes(preset) ? (mine.find((p) => p.pane === f?.pane) ?? mine.find((p) => p.focused) ?? mine[0])?.pane : null;
+    // keepLayouts (run right after) seats it: with nobody seated yet, every pane counts as new.
+    setShared(KEPT, { ...kept, [tab.id]: { preset, order: [], lead: lead ?? null, machine: space.machine } });
+  }
+
+  // A tab with a kept office layout is re-arranged when its panes change (an agent joined
+  // or left): seated desks keep their places on screen, newcomers take the last seats.
+  keepLayouts(cx) {
+    const kept = shared(KEPT);
+    if (!kept || typeof kept !== "object") return;
+    const all = panes();
+    const owner = new Map(spaces().flatMap((s) => s.tabs.map((tab) => [tab.id, s])));
+    const loaded = new Map(machines().map((m) => [m.name ?? null, m.layout === "ready"]));
+    const update = (tab, change) => {
+      const now = { ...(shared(KEPT) ?? {}) };
+      if (change) now[tab] = { ...now[tab], ...change };
+      else delete now[tab];
+      setShared(KEPT, now);
+    };
+    for (const [tab, want] of Object.entries(kept)) {
+      if (!want?.preset || this.arranging.has(tab)) continue;
+      const space = owner.get(tab);
+      if (!space) {
+        if (loaded.get(want.machine ?? null) === true) cx.spawn(async () => update(tab, null));
+        continue;
+      }
+      const ids = all.filter((p) => p.tab === tab).map((p) => p.pane);
+      const order = want.order ?? [];
+      if (!ids.length || (ids.length === order.length && ids.every((id) => order.includes(id)))) continue;
+      this.arranging.add(tab);
+      cx.spawn(async () => {
+        const r = await arrangeTab(tab, want.preset, { order, lead: want.lead, machine: space.machine });
+        this.arranging.delete(tab);
+        if ((shared(KEPT) ?? {})[tab]?.preset !== want.preset) return;
+        if (r.error) {
+          // Wait for the next change instead of retrying on every redraw.
+          update(tab, { order: ids });
+          notify({ title: "Office layout", body: `Could not re-arrange ${space.tabs.find((t) => t.id === tab)?.name ?? "a tab"}: ${r.error}`, level: "error", timeout: 8000 });
+        } else update(tab, { order: r.order, lead: want.lead ? r.order[0] : null });
+      });
+    }
   }
 
   // One tab per wheel notch. A touchpad or smooth-scrolling mouse sends many
@@ -185,6 +305,14 @@ export default class Tabs extends View {
         })
         .child(text.toUpperCase());
     };
+    // Office layouts: underlined while the shown tab keeps one.
+    const layoutKept = Boolean(selected && (shared(KEPT) ?? {})[selected]?.preset);
+    const layoutButton = h_flex().id("office-layouts").relative().h(28).pl(9).pr(11).pt(4).pb(6).flex_none().items_center()
+      .children([...box(t.raised, t.chrome, t.surface), ...(layoutKept ? [div().absolute().left(8).right(10).bottom(4).h(2).bg(t.accent)] : [])])
+      .font_family(MONO).font_bold().text_size(10).text_color(layoutKept ? t.foreground : t.muted).hover(s => s.text_color(t.foreground))
+      .on_mouse_down("left", stop)
+      .on_click(() => run("mod.open", { name: "company-layouts" }))
+      .child("LAYOUT");
     return h_flex().size_full().min_w(0).px(10).pl(lightsPadding).gap(3).items_center().bg(t.chrome).border_b(1).border_color(t.surface)
       .on_mouse_up("left", () => { this.pressed = null; })
       .on_scroll_wheel(e => this.wheel(e))
@@ -192,6 +320,7 @@ export default class Tabs extends View {
         .on_size_change((_size, cx) => { if (active >= 0) { this.scroll.scroll_to_item(active); cx.notify(); } })
         .children(shown.map(item)))
       .child(button("tab-new", "+", () => openOverlay({ mod: "new-menu", kind: "popup", width: 250, height: 512 })))
+      .child(layoutButton)
       .when(enabled.includes("files"), el => el.child(panelButton("files", "Files")))
       .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes")))
       .when(w?.buttons, el => el.child(button("minimize", w.platform === "windows" ? svg("mods/company-tabs/win-min.svg").size(14) : "−", () => run("window.minimize")))
