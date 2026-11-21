@@ -751,12 +751,15 @@ export default class Agents extends View {
     const fill = hot ? "#2b1d29" : lit ? "#262433" : "#181825";
     const blink = hot || a.status === "working" ? { from: 0.3, to: 1, period: hot ? 420 : 900, easing: "ease-in-out" } : null;
     // Never wider than the desk: a long name ends in "…" and hovering the plate shows all of it.
+    // Narrow (sub-agent) desks get a tighter plate so a short name like "worker1" still fits.
     const full = hinted ?? (cl ? clText : text);
-    return h_flex().id(`plate-${a.address}`).relative().mt(4).max_w(width).h(17).pl(6).pr(7).gap(4).items_center()
+    const tight = width < 70;
+    const dot = (el) => el.relative().size(tight ? 4 : 5).flex_none().bg(light);
+    return h_flex().id(`plate-${a.address}`).relative().mt(4).max_w(width).h(tight ? 16 : 17).pl(tight ? 4 : 6).pr(tight ? 5 : 7).gap(tight ? 3 : 4).items_center()
       .tooltip(String(full ?? ""))
       .children(box(frame, fill, "#11111b"))
-      .child(blink ? div().relative().size(5).flex_none().bg(light).loop("opacity", blink) : div().relative().size(5).flex_none().bg(light))
-      .child(div().relative().min_w(0).truncate().font_family(font).font_bold().text_size(9.5)
+      .child(blink ? dot(div()).loop("opacity", blink) : dot(div()))
+      .child(div().relative().min_w(0).truncate().font_family(font).font_bold().text_size(tight ? 9 : 9.5)
         .text_color(alert ?? (isSnooze ? "#a6adc8" : "#cdd6f4")).child(full));
   }
 
@@ -1803,7 +1806,9 @@ export default class Agents extends View {
     const ROLES = (a) => ((shared("pixel-hq.names") ?? {})[a.pane]?.role ?? agentOf(a.program?.key)?.role ?? "").toLowerCase();
     const STATE = { working: "typing working busy", idle: "idle break coffee snooze urge sleeping", done: "shipped done finished", blocked: "needs you blocked waiting" };
     const q = this.query.trim().toLowerCase();
-    const hitOf = (a) => !q || q.split(/\s+/).every((w) => [detail.get(a.address), a.space_name, label(a), a.program?.name, ROLES(a), STATE[a.status]].join(" ").toLowerCase().includes(w));
+    // The name an agent was started with (`hc run --name worker1`), when it has one.
+    const hcName = new Map(all.filter((k) => k.name).map((k) => [k.address, k.name]));
+    const hitOf = (a) => !q || q.split(/\s+/).every((w) => [hcName.get(a.address), detail.get(a.address), a.space_name, label(a), a.program?.name, ROLES(a), STATE[a.status]].join(" ").toLowerCase().includes(w));
     const hits = list.filter(hitOf);
     this.firstHit = q ? hits[0]?.pane ?? null : null;
     const breakers = list.filter((x) => x.status === "idle" && !x.focused && this.waitOf(x.address, x.status, now) < IDLE_SNOOZE).map((x) => x.address);
@@ -1841,7 +1846,7 @@ export default class Agents extends View {
       const pace = 1 + Math.min(1, 0.25 * (act.interns.length + act.jobs));
       const modelTxt = ctx ? modelOf(ctx) : "";
       const more = detail.get(a.address);
-      const text = (shared("pixel-hq.names") ?? {})[a.pane]?.name ?? more ?? a.space_name ?? label(a);
+      const text = (shared("pixel-hq.names") ?? {})[a.pane]?.name ?? hcName.get(a.address) ?? more ?? a.space_name ?? label(a);
       // The desk's branch (its own worktree, ideally) and whether another desk is about to step on it.
       const branch = paneBy.get(a.pane)?.branch ?? null;
       const cl = this.clash.get(a.address) ?? null;
@@ -1993,7 +1998,7 @@ export default class Agents extends View {
         .on_mouse_down("right", (_e, cx) => { cx.stop_propagation(); openFigures(a.space_name); })
         .tooltip(`${a.program?.name ?? ""} · ${isUrge ? `idle for ${duration(waited)} · click to focus` : isSnooze ? `snoozing (${duration(waited)}) · click to focus` : a.status} · ${text}${branch ? ` · ${branch}` : ""}${clTip ? ` · ${clTip}` : ""}${ctx ? ` · ${vitalsTip(ctx)}` : ""}${act.interns.length ? ` · ${act.interns.length} sub-agent${act.interns.length > 1 ? "s" : ""}` : ""}${act.jobs ? ` · ${act.jobs} shell job${act.jobs > 1 ? "s" : ""}${act.long ? ` (${act.long} over a minute)` : ""}` : ""} · drag to move`)
         .child(seat)
-        .child(this.nameplate(a, { text, hinted: this.hint?.addr === a.address ? this.hint.text : null, cl, clText, lit: a.focused || Boolean(q && hitOf(a)), hot, isUrge, isSnooze, width: petW + kk(12), font: monoF }))
+        .child(this.nameplate(a, { text, hinted: this.hint?.addr === a.address ? this.hint.text : null, cl, clText, lit: a.focused || Boolean(q && hitOf(a)), hot, isUrge, isSnooze, width: petW + kk(12) + (f < 1 ? 14 : 0), font: monoF }))
         // Under the plate: the branch, the model and how long the agent has been in this state.
         .when(Boolean(branch) || Boolean(modelTxt) || Boolean(timeTxt), (el) => el.child(h_flex().mt(2).gap(3).items_center().max_w(Math.max(petW + 22, cellW - 4)).text_size(9.5)
           .when(Boolean(branch), (el) => el
