@@ -70,21 +70,21 @@ export async function checkPixelHqUpdate(notifyUser = true) {
 
     let latest = null;
     try {
-      const commitRes = await fetch("https://api.github.com/repos/bnhan2710/pixel-hq/commits/main", {
+      const commitRes = await fetch("https://api.github.com/repos/andyhou01/pixel-hq/commits/main", {
         headers: { "User-Agent": "Pixel-HQ-Updater" },
       }).catch(() => null);
       if (commitRes && commitRes.ok) {
         const commitData = await commitRes.json().catch(() => null);
         const sha = commitData?.sha;
         if (sha) {
-          const rawShaRes = await fetch(`https://raw.githubusercontent.com/bnhan2710/pixel-hq/${sha}/mods/company-agents/version.json`);
+          const rawShaRes = await fetch(`https://raw.githubusercontent.com/andyhou01/pixel-hq/${sha}/mods/company-agents/version.json`);
           if (rawShaRes.ok) latest = await rawShaRes.json().catch(() => null);
         }
       }
     } catch {}
 
     if (!latest?.version) {
-      const res = await fetch(`https://raw.githubusercontent.com/bnhan2710/pixel-hq/main/mods/company-agents/version.json?t=${Date.now()}`);
+      const res = await fetch(`https://raw.githubusercontent.com/andyhou01/pixel-hq/main/mods/company-agents/version.json?t=${Date.now()}`);
       if (!res.ok) return null;
       latest = await res.json().catch(() => null);
     }
@@ -153,7 +153,7 @@ export async function executePixelHqUpdate() {
 
   try {
     let targetSha = "main";
-    const treeRes = await fetch("https://api.github.com/repos/bnhan2710/pixel-hq/git/trees/main?recursive=1", {
+    const treeRes = await fetch("https://api.github.com/repos/andyhou01/pixel-hq/git/trees/main?recursive=1", {
       headers: { "User-Agent": "Pixel-HQ-Updater" },
     }).catch(() => null);
     let fileList = [];
@@ -186,7 +186,7 @@ export async function executePixelHqUpdate() {
     let newVersion = "latest";
 
     for (const p of fileList) {
-      const url = `https://raw.githubusercontent.com/bnhan2710/pixel-hq/${targetSha}/${p}?t=${Date.now()}`;
+      const url = `https://raw.githubusercontent.com/andyhou01/pixel-hq/${targetSha}/${p}?t=${Date.now()}`;
       const res = await fetch(url);
       if (res.status === 404) continue;
       if (!res.ok) throw new Error(`HTTP ${res.status} while fetching ${p}`);

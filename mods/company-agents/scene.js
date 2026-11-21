@@ -128,7 +128,9 @@ function ledWall(x, w, base, isMusicPlaying = false, load = 0) {
   return o;
 }
 
-export const yHorizon = (H) => snap(snap(H) * 0.3); // where the wall ends and the floor begins
+// Where the wall ends and the floor begins: 30% of the panel, but never taller than WALL_MAX so the floor keeps its room.
+const WALL_MAX = 120;
+export const yHorizon = (H) => snap(Math.min(snap(H) * 0.3, WALL_MAX));
 
 // The time of day from the local clock: the sky, the city, the sun or the moon and the light on the floor follow it.
 const PHASES = {
@@ -155,7 +157,8 @@ export function sceneLayout(W, H) {
   const two = usable >= 100;
   const gap = two ? Math.max(32, snap(usable * 0.26)) : 0;
   const wA = two ? snap((usable - gap) / 2) : usable, wB = usable - wA - gap;
-  const winY = snap(yH * 0.1), winH = snap(yH * 0.58);
+  // A short wall gets shorter windows, so the board still fits under them.
+  const winY = snap(yH * 0.1), winH = snap(yH * (yH < 160 ? 0.5 : 0.58));
   const wins = [{ x: x0, w: snap(wA), seed: 1, moon: true }, ...(two ? [{ x: x0 + wA + gap, w: snap(wB), seed: 4, moon: false }] : [])].map((o) => ({ ...o, y: winY, h: winH }));
   const buildings = wins.flatMap((wn) => {
     const bw = snap(wn.w / 6);

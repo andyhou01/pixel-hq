@@ -35,6 +35,8 @@ const SPECIES = {
   penguin: { body: "#35425E", shade: "#2E3A52", eye: "#1B2130", badge: "#F2A33A", round: true },
   arch: { body: "#3186FF", shade: "#E8743B", eye: "#14131f", badge: "#F4E9DC", arch: true, legs: [70, 126], legW: 54 },
   sheep: { body: "#F1E7D3", shade: "#4A3B33", eye: "#FFFFFF", badge: "#E8744F", face: "#4A3B33" },
+  // GitHub Copilot: a silver robot with an antenna, glowing cyan eyes on a dark face plate, purple lights.
+  robot: { body: "#AEB8C6", shade: "#6E7A8A", eye: "#7CF3FF", badge: "#F4E9DC", robot: true, plate: "#1A1F2B", hi: "#D8DEE7", accent: "#A371F7", grill: "#3E7C8A", legs: [70, 158], legW: 24 },
 };
 
 const AGENTS = [
@@ -43,6 +45,7 @@ const AGENTS = [
   { match: (k) => k.includes("codex"), species: "bot", role: "Code Reviewer" },
   { match: (k) => k.includes("opencode"), species: "penguin", role: "Platform Engineer" },
   { match: (k) => k.includes("antigravity") || k === "agy", species: "arch", role: "Systems Architect" },
+  { match: (k) => k.includes("copilot"), species: "robot", role: "Pair Programmer" },
 ];
 export function agentOf(key) {
   const k = String(key ?? "").toLowerCase();
@@ -221,14 +224,27 @@ export function duckMood(m, height, { still = false, species = "crab", pace = 1 
           : [rect(86, 68, 20, 28, EYE), rect(146, 68, 20, 28, EYE), rect(89, 71, 8, 8, WH), rect(149, 71, 8, 8, WH), rect(99, 87, 4, 4, "#ffffffaa"), rect(159, 87, 4, 4, "#ffffffaa")]),
     rect(114, 100, 22, 7, "#F5A623"), rect(118, 107, 14, 6, "#E0861C"), rect(62, 102, 18, 8, "#F49AA8"), rect(170, 102, 18, 8, "#F49AA8"),
   ];
+  // Copilot's robot: square glowing eyes and a grille mouth on the face plate.
+  // Built only for the robot: other species have no grill colour.
+  const grille = sp.robot ? [0, 1, 2, 3, 4].map((i) => rect(96 + i * 12, 78, 6, 8, sp.grill)) : [];
+  const robotFace = !sp.robot ? [] : cheer
+    ? [rect(78, 50, 8, 14, EYE), rect(100, 50, 8, 14, EYE), rect(84, 42, 18, 10, EYE), rect(142, 50, 8, 14, EYE), rect(164, 50, 8, 14, EYE), rect(148, 42, 18, 10, EYE),
+      rect(98, 80, 54, 6, EYE), rect(92, 74, 8, 8, EYE), rect(150, 74, 8, 8, EYE)]
+    : urging
+      ? [rect(74, 32, 38, 40, EYE), rect(138, 32, 38, 40, EYE), rect(78, 36, 12, 12, WH), rect(142, 36, 12, 12, WH), rect(114, 76, 22, 14, EYE), rect(200, 18, 8, 12, "#89dceb")]
+      : rest
+        ? [rect(78, 52, 30, 6, EYE), rect(142, 52, 30, 6, EYE), ...grille]
+        : [rect(78, 38, 30, 28, EYE), rect(142, 38, 30, 28, EYE), rect(82, 42, 10, 8, WH), rect(146, 42, 10, 8, WH), ...grille];
   const eyes2 = sp.arch
     ? [...archFace, rect(116, 104, 22, 8, "#ef6a7e"), rect(170, 104, 22, 8, "#ef6a7e")]
     : sp.round
       ? roundFace
-      : eyes;
+      : sp.robot
+        ? robotFace
+        : eyes;
 
   // Claws. Typing: they alternate. Waving: the right one waves up. Cheering: both flap high.
-  const [LX, RX, CW] = sp.arch ? [26, 194, 30] : sp.round ? [16, 208, 26] : [0, 225, 25];
+  const [LX, RX, CW] = sp.arch ? [26, 194, 30] : sp.round ? [16, 208, 26] : sp.robot ? [18, 208, 24] : [0, 225, 25];
   let leftClaw = rect(LX, 122, CW, 40, SHADE);
   let rightClaw = rect(RX, 122, CW, 40, SHADE);
   if (typing) {
@@ -335,7 +351,7 @@ export function duckMood(m, height, { still = false, species = "crab", pace = 1 
   let group = div().absolute().left(px(ROOM)).top(0).w(px(250)).h(px(207))
     .child(leftClaw)
     .child(rightClaw)
-    .when(!sp.bot && !sp.arch && !sp.round, (el) => el.child(rect(25, 0, 200, 200, BODY)))
+    .when(!sp.bot && !sp.arch && !sp.round && !sp.robot, (el) => el.child(rect(25, 0, 200, 200, BODY)))
     .when(Boolean(sp.arch), (el) => el.children(ARCH.map(([x, y, w, h, c]) => rect(x, y, w, h, c))))
     .when(Boolean(sp.round), (el) => el.children(PENGUIN.map(([x, y, w, h, c]) => rect(x, y, w, h, c))))
     .when(Boolean(sp.bot), (el) => el
@@ -348,9 +364,25 @@ export function duckMood(m, height, { still = false, species = "crab", pace = 1 
     .when(Boolean(sp.patch), (el) => el.child(rect(40, 32, 56, 60, sp.patch)).child(rect(146, 32, 56, 60, sp.patch)))
     .when(Boolean(sp.face), (el) => el.child(rect(64, 22, 112, 88, sp.face)).child(rect(14, 40, 26, 18, sp.face)).child(rect(200, 40, 26, 18, sp.face)))
     .when(Boolean(sp.wings), (el) => el.children(heraldHelmet(rect, motion, px, { cheer, typing, urging, fast })))
+    // Copilot's robot: blinking antenna, ear bolts, a boxy head with its face plate, a neck, and a torso with a light panel.
+    .when(Boolean(sp.robot), (el) => el
+      .child(rect(120, -14, 10, 20, SHADE))
+      .child(motion(rect(112, -28, 26, 16, sp.accent), "opacity", { from: 0.45, to: 1, period: 900, easing: "ease-in-out" }))
+      .child(rect(116, -24, 6, 5, WH))
+      .child(rect(20, 36, 18, 48, SHADE)).child(rect(212, 36, 18, 48, SHADE))
+      .child(rect(24, 52, 10, 14, sp.accent)).child(rect(216, 52, 10, 14, sp.accent))
+      .child(rect(38, 4, 174, 108, BODY)).child(rect(48, 4, 154, 8, sp.hi)).child(rect(38, 104, 174, 8, SHADE))
+      .child(rect(54, 22, 142, 74, sp.plate))
+      .child(rect(108, 112, 34, 12, SHADE))
+      .child(rect(44, 122, 162, 78, BODY)).child(rect(44, 122, 162, 6, sp.hi))
+      .child(rect(60, 138, 84, 46, sp.plate))
+      .child(motion(rect(68, 146, 12, 12, "#7EE787"), "opacity", { from: 0.35, to: 1, period: fast(700), easing: "linear" }))
+      .child(rect(86, 146, 12, 12, sp.accent)).child(rect(104, 146, 12, 12, "#F2CC60"))
+      .child(rect(68, 166, 60, 8, "#30363D")).child(rect(68, 166, 34, 8, EYE)))
     .children(eyes2)
     // company badge on a lanyard, hanging at the right side of the chest
-    .when(!sp.bot && !sp.arch && !sp.round, (el) => el.child(rect(181, 82, 6, 38, BADGE_TOP)).child(rect(163, 120, 42, 56, BADGE)).child(rect(163, 120, 42, 12, BADGE_TOP)).child(rect(174, 140, 20, 16, SHADE)).child(rect(170, 162, 28, 6, SHADE)))
+    .when(Boolean(sp.robot), (el) => el.child(rect(177, 124, 6, 12, BADGE_TOP)).child(rect(160, 136, 40, 48, BADGE)).child(rect(160, 136, 40, 10, BADGE_TOP)).child(rect(170, 152, 20, 14, SHADE)).child(rect(166, 172, 28, 6, SHADE)))
+    .when(!sp.bot && !sp.arch && !sp.round && !sp.robot, (el) => el.child(rect(181, 82, 6, 38, BADGE_TOP)).child(rect(163, 120, 42, 56, BADGE)).child(rect(163, 120, 42, 12, BADGE_TOP)).child(rect(174, 140, 20, 16, SHADE)).child(rect(170, 162, 28, 6, SHADE)))
     .when(Boolean(props), (el) => el.child(props));
   group = cheer
     ? motion(group, "top", { from: 0, to: px(-18), period: 300, easing: "ease-in-out" })

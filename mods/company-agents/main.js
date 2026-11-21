@@ -1797,7 +1797,13 @@ export default class Agents extends View {
     const hidden = list.length - seated.length;
     const posOf = new Map();
     const monoF = "JetBrains Mono";
+    // A sub-agent (its parent terminal is still live) gets a smaller desk than the agent that started it.
+    const parentOf = new Map(all.map((k) => [k.address, k.parent]));
+    const liveAddr = new Set(all.filter((k) => k.state === "live").map((k) => k.address));
+    const SUB_SCALE = 0.7;
     const pets = seated.map((a, i) => {
+      const f = liveAddr.has(parentOf.get(a.address)) ? SUB_SCALE : 1;
+      const PET = Math.round(pick.P * f), petW = duckWidth(PET), kk = (v) => Math.round(v * S * f);
       // A pet keeps its desk: slots follow a stable order, not the status sort.
       const slot = order.indexOf(a.address);
       const sx = ((slot % colsUsed) + 0.5) / colsUsed;
@@ -1806,7 +1812,7 @@ export default class Agents extends View {
       const own = this.petpos[a.address];
       // Room for the cubicle panels (9 units each side) and the server rack (11 units right), so an edge desk shows them.
       const left = own ? own[0] * sz.width : Math.max(kk(10), Math.min(sz.width - petW - kk(12), sz.width * Math.min(0.92, sx + lap) - petW / 2));
-      const top = own ? own[1] * sz.height : fieldTop + fieldH * Math.min(1, sy + lap);
+      const top = own ? own[1] * sz.height : fieldTop + fieldH * Math.min(1, sy + lap) + (pick.P - PET);
       posOf.set(a.address, { x: left + petW / 2, y: top + PET * 0.5 });
       const ctx = contextOf.get(a.address);
       const ctxPct = ctx?.pct ?? null;
@@ -2040,7 +2046,7 @@ export default class Agents extends View {
         const isPlaying = Boolean(m?.playing);
         const title = m?.title || "Pixel MusicBox";
         const snap = (v) => Math.round(v / 4) * 4;
-        const yH = snap(snap(sz.height) * 0.3);
+        const yH = yHorizon(sz.height);
         const base = yH - 8;
         const rackW = Math.max(64, Math.min(110, snap(sz.width * 0.27)));
         const rackX = sz.width - rackW - 10;
