@@ -40,6 +40,7 @@ const PIXEL_HQ_FILES = [
   "mods/company-agents/duck.js",
   "mods/company-agents/editor.js",
   "mods/company-agents/figures.js",
+  "mods/company-agents/floorplan.js",
   "mods/company-agents/opencode-status.js",
   "mods/company-agents/scene.js",
   "mods/company-agents/sparkles.svg",

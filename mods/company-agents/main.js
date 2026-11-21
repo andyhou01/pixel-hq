@@ -10,9 +10,16 @@ import { scene, sceneLayout, yHorizon } from "./scene.js";
 import { Editor } from "./editor.js";
 import { checkPixelHqUpdate, executePixelHqUpdate } from "./updater.js";
 import { snapshot, clashes, hire, agentTaskArgv } from "./crew.js";
+import { FLOOR_PLANS, planOf, floorTeams, planRows, planSpots, cubicleSpot } from "./floorplan.js";
+
+// The plan each floor (space) uses: { [space id]: { plan, at } }; `at` marks a fresh pick,
+// which clears the desks dragged on that floor.
+const FLOOR_KEY = "pixel-hq.floor-plans";
 
 // The figure editor, as a dialog; `space` opens it on that space's pick.
 const openFigures = (space) => openOverlay({ mod: "company-agents", kind: "dialog", frame: "none", width: 860, height: 640, props: { figures: true, ...(space ? { space } : {}) } });
+// The floor-plan popup for one space (floor).
+const openFloorMenu = (space) => openOverlay({ mod: "company-agents", kind: "popup", frame: "none", width: 260, height: 262, props: { floorMenu: true, space } });
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -317,7 +324,7 @@ const agyTranscriptVitals = async (cwd, machine) => {
 export default class Agents extends View {
   init(_props, cx) {
     if (props()?.needsYou || props()?.workload || props()?.today) return;
-    if (props()?.sortMenu) return;
+    if (props()?.sortMenu || props()?.floorMenu) return;
     if (props()?.figures) { this.editor = new Editor(cx); return; }
     // Figure sets come from ~/.config/herdr-app/pond-agents.json; hand edits show within seconds.
     this.file = {};
@@ -340,6 +347,8 @@ export default class Agents extends View {
     this.folded = new Set();
     // Where the person dragged each pet: fractions of the panel, kept across restarts.
     try { this.petpos = JSON.parse(localStorage.getItem("petpos") ?? "{}"); } catch { this.petpos = {}; }
+    // The floor-plan pick each floor last applied (its `at`), so a restart doesn't clear dragged desks again.
+    try { this.planSeen = JSON.parse(localStorage.getItem("planSeen") ?? "{}"); } catch { this.planSeen = {}; }
     this.drag = null;
     // Find staff: typing dims everyone who does not match; Enter jumps to the first match.
     this.query = "";
@@ -367,7 +376,7 @@ export default class Agents extends View {
     this.scanCodex(cx);
     cx.timer.every(8000, (cx) => this.scanCodex(cx));
     // `company-agents.hire` (a key binding, or herdr-app do) opens the hire form.
-    cx.spawn(async (cx) => { for (;;) { const c = await nextCommand(); if (c === "hire") this.openHire(cx); if (c === "update") this.runUpdate(); if (c === "needsYou") this.openNeedsYou(); } });
+    cx.spawn(async (cx) => { for (;;) { const c = await nextCommand(); if (c === "hire") this.openHire(cx); if (c === "update") this.runUpdate(); if (c === "needsYou") this.openNeedsYou(); this.floorCommand(c, cx); } });
     // OpenCode 1.x does not report a status by itself, so without help it never gets a desk. Once, if OpenCode is installed, drop its
     // status plugin (this mod's opencode-status.js) into OpenCode's plugins folder. Only ever replaces Pixel HQ's own older copy;
     // deleting the file removes it for good.
@@ -533,6 +542,82 @@ export default class Agents extends View {
   rank(a) {
     const sawDone = a.address === this.held?.address && this.held.rank === RANK.done && a.status === "idle";
     return sawDone ? RANK.done : RANK[a.status] ?? 0;
+  }
+
+  // company-agents.floor-<plan> picks that plan for the shown floor, as the floor-plan popup does;
+  // company-agents.floor-menu opens the popup.
+  floorCommand(c, cx) {
+    const space = spaces().find((x) => x.active)?.id;
+    if (!space || typeof c !== "string" || !c.startsWith("floor-")) return;
+    if (c === "floor-menu") {
+      openFloorMenu(space);
+      return;
+    }
+    const plan = c.slice(6);
+    if (!FLOOR_PLANS.some((p) => p.id === plan)) return;
+    setShared(FLOOR_KEY, { ...(shared(FLOOR_KEY) ?? {}), [space]: { plan, at: Date.now() } });
+    cx.notify();
+  }
+
+  // The floor-plan popup: one row per plan, drawn for a lead and four teammates.
+  floorMenu(t) {
+    const space = props().space;
+    const on = planOf((shared(FLOOR_KEY) ?? {})[space]?.plan).id;
+    const sample = [{ lead: "lead", team: ["a", "b", "c", "d"] }];
+    const W = 40, H = 30;
+    const thumb = (plan, sel) => {
+      const layout = planRows(plan.id, sample, 2);
+      const spots = layout ? planSpots(layout) : new Map(["lead", "a", "b", "c", "d"].map((a, i) => [a, cubicleSpot(i, 2, 3)]));
+      // Desks shrink to keep a gap when a plan has many rows (stand-up).
+      const tall = Math.min(5, Math.floor((H - 6) / (layout?.rows.length ?? 3)) - 1);
+      return div().relative().w(W).h(H).flex_none().bg("#11111b").border_1().border_color(sel ? t.accent : "#313244")
+        .children([...spots].map(([a, [x, y]]) => {
+          const lead = a === "lead" && plan.lead;
+          const w = lead ? 11 : 8, h = lead ? tall + 1 : tall;
+          return div().absolute().left(Math.round(4 + x * (W - 8) - w / 2)).top(Math.round(3 + y * (H - 6 - h))).w(w).h(h)
+            .bg(lead ? t.accent : sel ? "#a6adc8" : "#585b70");
+        }));
+    };
+    return div()
+      .relative()
+      .w(260)
+      .children(box("#45475a", "#181825", "#11111b"))
+      .child(
+        v_flex()
+          .relative()
+          .p(6)
+          .font_family("JetBrains Mono")
+          .text_size(11)
+          .child(
+            h_flex().px(6).pt(2).pb(4).border_b(1).border_color("#313244").justify_between().items_center()
+              .child(div().font_bold().text_size(10).text_color(t.dim).child("FLOOR PLAN"))
+              .child(h_flex().id("floor-esc").relative().h(20).px(6).items_center().justify_center().cursor_pointer()
+                .children(box("#45475a", "#313244", "#11111b"))
+                .hover((s) => s.text_color("#ffffff"))
+                .on_click(() => closeOverlay(props().overlay))
+                .child(div().font_family("JetBrains Mono").text_size(8.5).font_bold().text_color("#a6adc8").child("ESC"))),
+          )
+          .child(
+            v_flex().py(2).gap(2).children(
+              FLOOR_PLANS.map((p) => {
+                const sel = p.id === on;
+                return h_flex().id(`floor-${p.id}`).h(36).px(6).gap(8).items_center().cursor_pointer()
+                  .text_color(t.foreground)
+                  .when(sel, (el) => el.bg("#313244"))
+                  .hover((el) => el.bg("#313244"))
+                  .on_click(() => {
+                    setShared(FLOOR_KEY, { ...(shared(FLOOR_KEY) ?? {}), [space]: { plan: p.id, at: Date.now() } });
+                    closeOverlay(props().overlay);
+                  })
+                  .child(thumb(p, sel))
+                  .child(v_flex().flex_1().min_w(0).gap(1)
+                    .child(div().font_bold().text_color(sel ? t.foreground : "#a6adc8").child(p.name.toUpperCase()))
+                    .child(div().truncate().text_size(9.5).text_color(t.dim).child(p.about)))
+                  .when(sel, (el) => el.child(div().size(6).flex_none().bg(t.accent)));
+              }),
+            ),
+          ),
+      );
   }
 
   sortMenu(t) {
@@ -1519,6 +1604,7 @@ export default class Agents extends View {
   render(cx) {
     const t = theme();
     if (props()?.sortMenu) return this.sortMenu(t);
+    if (props()?.floorMenu) return this.floorMenu(t);
     if (props()?.needsYou) return this.needsYou(t);
     if (props()?.workload) return this.workloadView(t);
     if (props()?.today) return this.todayView(t);
@@ -1787,10 +1873,29 @@ export default class Agents extends View {
     const base = scales.map((s) => plan(s, 0));
     const vitalsOn = withVitals && (base.find((p) => p.cols * p.rows >= nAgents) ?? base[base.length - 1]).cw >= 90;
     const P0 = scales.map((s) => plan(s, vitalsOn ? 11 : 0));
-    const pick = P0.find((p) => p.cols * p.rows >= nAgents) ?? P0[P0.length - 1];
+    // The floor's plan, at the largest desks it fits; one that never fits falls back to cubicles.
+    const parentOf = new Map(all.map((k) => [k.address, k.parent]));
+    const stable = list.map((x) => x.address).sort((x, y) => x.localeCompare(y, undefined, { numeric: true }));
+    const chosenPlan = activeId ? (shared(FLOOR_KEY) ?? {})[activeId] : null;
+    if (activeId && chosenPlan?.at && this.planSeen[activeId] !== chosenPlan.at) {
+      for (const x of list) delete this.petpos[x.address];
+      this.planSeen[activeId] = chosenPlan.at;
+      try {
+        localStorage.setItem("petpos", JSON.stringify(this.petpos));
+        localStorage.setItem("planSeen", JSON.stringify(this.planSeen));
+      } catch { /* storage blocked: cleared for this session */ }
+    }
+    const floorPlan = planOf(chosenPlan?.plan).id;
+    const teams = floorPlan === "cubicles" ? [] : floorTeams(stable, parentOf);
+    const planned = floorPlan === "cubicles" ? null
+      : P0.map((p) => ({ p, layout: planRows(floorPlan, teams, p.cols) })).find((x) => x.layout.rows.length <= x.p.rows) ?? null;
+    const spotOf = planned ? planSpots(planned.layout) : null;
+    const pick = planned?.p ?? P0.find((p) => p.cols * p.rows >= nAgents) ?? P0[P0.length - 1];
     const S = pick.sc, PET = pick.P, petW = pick.pw, cellW = pick.cw, cellH = pick.ch;
     const kk = (v) => Math.round(v * S);
     const fieldH = Math.max(0, sz.height - fieldTop - cellH);
+    // A plan's rows stay close together under the wall instead of spreading over the whole floor.
+    const planSpan = planned ? Math.min(fieldH, (planned.layout.rows.length - 1) * cellH * 1.1) : fieldH;
     const endDrag = (cx) => {
       const d = this.drag;
       if (!d) return;
@@ -1813,8 +1918,7 @@ export default class Agents extends View {
     this.firstHit = q ? hits[0]?.pane ?? null : null;
     const breakers = list.filter((x) => x.status === "idle" && !x.focused && this.waitOf(x.address, x.status, now) < IDLE_SNOOZE).map((x) => x.address);
     this.breakerList = breakers;
-    const stable = list.map((x) => x.address).sort((x, y) => x.localeCompare(y, undefined, { numeric: true }));
-    const seated = list.slice(0, pick.cols * pick.rows);
+    const seated = planned ? list : list.slice(0, pick.cols * pick.rows);
     const shownSet = new Set(seated.map((x) => x.address));
     const order = stable.filter((x) => shownSet.has(x));
     const colsUsed = Math.min(pick.cols, Math.max(2, Math.ceil(seated.length / pick.rows)));
@@ -1823,21 +1927,18 @@ export default class Agents extends View {
     const posOf = new Map();
     const monoF = "JetBrains Mono";
     // A sub-agent (its parent terminal is still live) gets a smaller desk than the agent that started it.
-    const parentOf = new Map(all.map((k) => [k.address, k.parent]));
     const liveAddr = new Set(all.filter((k) => k.state === "live").map((k) => k.address));
     const SUB_SCALE = 0.7;
     const pets = seated.map((a, i) => {
       const f = liveAddr.has(parentOf.get(a.address)) ? SUB_SCALE : 1;
       const PET = Math.round(pick.P * f), petW = duckWidth(PET), kk = (v) => Math.round(v * S * f);
       // A pet keeps its desk: slots follow a stable order, not the status sort.
-      const slot = order.indexOf(a.address);
-      const sx = ((slot % colsUsed) + 0.5) / colsUsed;
-      const sy = rowsUsed > 1 ? (Math.floor(slot / colsUsed) + ((slot % colsUsed) % 2) * (rowsUsed < 3 ? 0.12 : 0)) / (rowsUsed - 1 + (rowsUsed < 3 ? 0.12 : 0)) : 0;
+      const [sx, sy] = spotOf?.get(a.address) ?? cubicleSpot(order.indexOf(a.address), colsUsed, rowsUsed);
       const lap = 0;
       const own = this.petpos[a.address];
       // Room for the cubicle panels (9 units each side) and the server rack (11 units right), so an edge desk shows them.
       const left = own ? own[0] * sz.width : Math.max(kk(10), Math.min(sz.width - petW - kk(12), sz.width * Math.min(0.92, sx + lap) - petW / 2));
-      const top = own ? own[1] * sz.height : fieldTop + fieldH * Math.min(1, sy + lap) + (pick.P - PET);
+      const top = own ? own[1] * sz.height : fieldTop + planSpan * Math.min(1, sy + lap) + (pick.P - PET);
       posOf.set(a.address, { x: left + petW / 2, y: top + PET * 0.5 });
       const ctx = contextOf.get(a.address);
       const ctxPct = ctx?.pct ?? null;
@@ -2154,6 +2255,11 @@ export default class Agents extends View {
                   .on_click(() => openFigures(focused()?.space ? spaces().find((s) => s.id === focused().space)?.name : null))
                   .tooltip("Pond figures: how agents look, per space")
                   .child(svg("mods/company-agents/duck-icon.svg").size(14)))
+                .child(div().id("ag-floor-plan").relative().w(14).h(14).flex_none().cursor_pointer()
+                  .tooltip(`Floor plan: ${planOf(chosenPlan?.plan).name} · arrange the desks`)
+                  .on_click(() => { if (activeId) openFloorMenu(activeId); })
+                  .children([[4, 0, 6, 4], [0, 6, 6, 3], [8, 6, 6, 3], [0, 11, 6, 3], [8, 11, 6, 3]].map(([x, y, w, h]) => div().absolute().left(x).top(y).w(w).h(h)
+                    .bg(floorPlan === "cubicles" ? "#7f849c" : "#89b4fa"))))
                 .child(
                   div()
                     .id("ag-sort")
