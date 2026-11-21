@@ -35,8 +35,12 @@ const SPECIES = {
   penguin: { body: "#35425E", shade: "#2E3A52", eye: "#1B2130", badge: "#F2A33A", round: true },
   arch: { body: "#3186FF", shade: "#E8743B", eye: "#14131f", badge: "#F4E9DC", arch: true, legs: [70, 126], legW: 54 },
   sheep: { body: "#F1E7D3", shade: "#4A3B33", eye: "#FFFFFF", badge: "#E8744F", face: "#4A3B33" },
-  // GitHub Copilot, drawn from its logo: a pale domed helmet with goggles, ear flaps, a dark face with two pill eyes. No arms.
-  copilot: { body: "#DCE3EA", shade: "#9AA6B2", eye: "#EEF6FF", badge: "#F4E9DC", copilot: true, arms: false, plate: "#111826", lens: "#1C2740", glint: "#7E93B8", hi: "#F7FAFC", legs: [92, 136], legW: 22 },
+  // GitHub Copilot, drawn from its logo: a gradient helmet (pink crown, sky-blue goggles, royal-blue chin), violet ear flaps,
+  // a dark face with two mint pill eyes. No arms.
+  copilot: {
+    body: "#6FB0FB", shade: "#384EBD", eye: "#86F7A9", badge: "#F4E9DC", copilot: true, arms: false, plate: "#0E1220", legs: [92, 136], legW: 22,
+    col: { cap: "#DE94FE", sky: "#6FB0FB", mid: "#549EFD", blue: "#3C77FD", deep: "#0B57EB", earHi: "#9475FD", ear: "#7C6DFD", earLo: "#665CDE", earBase: "#384EBD", chin: "#1D64FC", chinLo: "#143BA4", navy: "#0A2339" },
+  },
 };
 
 const AGENTS = [
@@ -49,22 +53,28 @@ const AGENTS = [
 ];
 
 // Copilot's head in body units (250 x 198), traced from the 24x24 logo at ~10.4 units per logo unit.
-// [x, y, w, h, colour]: the shell (dome, ear flaps, chin), then the goggle lenses and bridge window, then the face plate.
-const copilotHead = (sp) => [
-  [89, 0, 73, 6], [67, 6, 116, 8], [55, 14, 140, 8], [47, 22, 156, 9], [38, 31, 175, 21], [30, 52, 190, 39],
-  [14, 91, 223, 8], [4, 99, 242, 9], [0, 108, 250, 38], [4, 146, 242, 9],
-  [13, 155, 225, 13], [27, 168, 196, 14], [56, 182, 138, 11], [90, 193, 70, 5],
-].map(([x, y, w, h]) => [x, y, w, h, sp.body]).concat([
-  [72, 6, 40, 4, sp.hi], [52, 18, 22, 6, sp.hi], [42, 32, 8, 14, sp.hi],
-  [0, 108, 6, 38, sp.shade], [244, 108, 6, 38, sp.shade],
-  [27, 178, 29, 4, sp.shade], [194, 178, 29, 4, sp.shade], [56, 189, 34, 4, sp.shade], [160, 189, 34, 4, sp.shade], [90, 195, 70, 3, sp.shade],
-  [58, 27, 42, 6, sp.lens], [48, 33, 62, 49, sp.lens], [56, 82, 48, 6, sp.lens],
-  [150, 27, 42, 6, sp.lens], [140, 33, 62, 49, sp.lens], [146, 82, 48, 6, sp.lens],
-  [56, 37, 14, 6, sp.glint], [56, 43, 6, 6, sp.glint], [148, 37, 14, 6, sp.glint], [148, 43, 6, 6, sp.glint],
-  [117, 55, 16, 10, sp.lens],
-  [116, 78, 18, 14, sp.plate], [63, 92, 125, 7, sp.plate], [51, 99, 148, 52, sp.plate],
-  [58, 151, 134, 12, sp.plate], [78, 163, 94, 8, sp.plate], [102, 171, 46, 5, sp.plate],
-]);
+// [x, y, w, h, colour], back to front: the shell in bands top to bottom (lit from the left), the ear flaps, the chin,
+// then the goggle lenses and the face plate, both dark with a navy floor.
+const copilotHead = (sp) => {
+  const c = sp.col, P = sp.plate;
+  return [
+    [89, 0, 73, 6, c.cap], [67, 6, 116, 8, c.cap],
+    [55, 14, 140, 8, c.sky], [47, 22, 156, 9, c.sky], [38, 31, 158, 21, c.sky], [196, 31, 17, 21, c.mid],
+    [30, 52, 172, 28, c.mid], [202, 52, 18, 39, c.deep], [30, 80, 172, 11, c.blue],
+    [30, 91, 190, 8, c.blue], [14, 91, 16, 8, c.earHi], [220, 91, 17, 8, c.earHi],
+    [4, 99, 47, 9, c.earHi], [199, 99, 47, 9, c.earHi],
+    [0, 108, 51, 38, c.ear], [199, 108, 51, 38, c.ear], [0, 108, 8, 38, c.earLo], [242, 108, 8, 38, c.earLo],
+    [4, 146, 242, 9, c.earBase],
+    [13, 155, 225, 13, c.chin], [13, 155, 14, 13, c.chinLo], [224, 155, 14, 13, c.chinLo],
+    [27, 168, 196, 14, c.chin], [27, 178, 29, 4, c.chinLo], [194, 178, 29, 4, c.chinLo],
+    [56, 182, 138, 11, c.chin], [56, 189, 34, 4, c.chinLo], [160, 189, 34, 4, c.chinLo],
+    [90, 193, 70, 5, c.chinLo],
+    [58, 27, 42, 6, P], [48, 33, 62, 49, P], [56, 82, 48, 6, c.navy],
+    [150, 27, 42, 6, P], [140, 33, 62, 49, P], [146, 82, 48, 6, c.navy],
+    [116, 78, 18, 14, P], [63, 92, 125, 7, P], [51, 99, 148, 52, P],
+    [58, 151, 134, 12, P], [78, 163, 94, 8, c.navy], [102, 171, 46, 5, c.navy],
+  ];
+};
 export function agentOf(key) {
   const k = String(key ?? "").toLowerCase();
   return AGENTS.find((a) => a.match(k)) ?? null;
