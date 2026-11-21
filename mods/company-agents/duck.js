@@ -27,7 +27,7 @@ const BADGE = "#F4E9DC";
 const BADGE_TOP = "#8C4A33";
 
 // One species per agent program: Claude is the orange crab, Codex a blue terminal robot, OpenCode a penguin, Antigravity the rainbow arch,
-// Hermes the herald in a gold winged helmet, the rest sheep.
+// Hermes the herald in a gold winged helmet, Copilot its goggled helmet logo, the rest sheep.
 const SPECIES = {
   herald: { body: "#2F3346", shade: "#22263A", eye: "#F5F1E6", badge: "#E8B04A", wings: true },
   crab: { body: "#D97757", shade: "#B5593B", eye: "#2A1A14", badge: "#F4E9DC" },
@@ -35,8 +35,8 @@ const SPECIES = {
   penguin: { body: "#35425E", shade: "#2E3A52", eye: "#1B2130", badge: "#F2A33A", round: true },
   arch: { body: "#3186FF", shade: "#E8743B", eye: "#14131f", badge: "#F4E9DC", arch: true, legs: [70, 126], legW: 54 },
   sheep: { body: "#F1E7D3", shade: "#4A3B33", eye: "#FFFFFF", badge: "#E8744F", face: "#4A3B33" },
-  // GitHub Copilot: a silver robot with an antenna, glowing cyan eyes on a dark face plate, purple lights.
-  robot: { body: "#AEB8C6", shade: "#6E7A8A", eye: "#7CF3FF", badge: "#F4E9DC", robot: true, plate: "#1A1F2B", hi: "#D8DEE7", accent: "#A371F7", grill: "#3E7C8A", legs: [70, 158], legW: 24 },
+  // GitHub Copilot, drawn from its logo: a pale domed helmet with goggles, ear flaps, a dark face with two pill eyes. No arms.
+  copilot: { body: "#DCE3EA", shade: "#9AA6B2", eye: "#EEF6FF", badge: "#F4E9DC", copilot: true, arms: false, plate: "#111826", lens: "#1C2740", glint: "#7E93B8", hi: "#F7FAFC", legs: [92, 136], legW: 22 },
 };
 
 const AGENTS = [
@@ -45,8 +45,26 @@ const AGENTS = [
   { match: (k) => k.includes("codex"), species: "bot", role: "Code Reviewer" },
   { match: (k) => k.includes("opencode"), species: "penguin", role: "Platform Engineer" },
   { match: (k) => k.includes("antigravity") || k === "agy", species: "arch", role: "Systems Architect" },
-  { match: (k) => k.includes("copilot"), species: "robot", role: "Pair Programmer" },
+  { match: (k) => k.includes("copilot"), species: "copilot", role: "Pair Programmer" },
 ];
+
+// Copilot's head in body units (250 x 198), traced from the 24x24 logo at ~10.4 units per logo unit.
+// [x, y, w, h, colour]: the shell (dome, ear flaps, chin), then the goggle lenses and bridge window, then the face plate.
+const copilotHead = (sp) => [
+  [89, 0, 73, 6], [67, 6, 116, 8], [55, 14, 140, 8], [47, 22, 156, 9], [38, 31, 175, 21], [30, 52, 190, 39],
+  [14, 91, 223, 8], [4, 99, 242, 9], [0, 108, 250, 38], [4, 146, 242, 9],
+  [13, 155, 225, 13], [27, 168, 196, 14], [56, 182, 138, 11], [90, 193, 70, 5],
+].map(([x, y, w, h]) => [x, y, w, h, sp.body]).concat([
+  [72, 6, 40, 4, sp.hi], [52, 18, 22, 6, sp.hi], [42, 32, 8, 14, sp.hi],
+  [0, 108, 6, 38, sp.shade], [244, 108, 6, 38, sp.shade],
+  [27, 178, 29, 4, sp.shade], [194, 178, 29, 4, sp.shade], [56, 189, 34, 4, sp.shade], [160, 189, 34, 4, sp.shade], [90, 195, 70, 3, sp.shade],
+  [58, 27, 42, 6, sp.lens], [48, 33, 62, 49, sp.lens], [56, 82, 48, 6, sp.lens],
+  [150, 27, 42, 6, sp.lens], [140, 33, 62, 49, sp.lens], [146, 82, 48, 6, sp.lens],
+  [56, 37, 14, 6, sp.glint], [56, 43, 6, 6, sp.glint], [148, 37, 14, 6, sp.glint], [148, 43, 6, 6, sp.glint],
+  [117, 55, 16, 10, sp.lens],
+  [116, 78, 18, 14, sp.plate], [63, 92, 125, 7, sp.plate], [51, 99, 148, 52, sp.plate],
+  [58, 151, 134, 12, sp.plate], [78, 163, 94, 8, sp.plate], [102, 171, 46, 5, sp.plate],
+]);
 export function agentOf(key) {
   const k = String(key ?? "").toLowerCase();
   return AGENTS.find((a) => a.match(k)) ?? null;
@@ -224,27 +242,26 @@ export function duckMood(m, height, { still = false, species = "crab", pace = 1 
           : [rect(86, 68, 20, 28, EYE), rect(146, 68, 20, 28, EYE), rect(89, 71, 8, 8, WH), rect(149, 71, 8, 8, WH), rect(99, 87, 4, 4, "#ffffffaa"), rect(159, 87, 4, 4, "#ffffffaa")]),
     rect(114, 100, 22, 7, "#F5A623"), rect(118, 107, 14, 6, "#E0861C"), rect(62, 102, 18, 8, "#F49AA8"), rect(170, 102, 18, 8, "#F49AA8"),
   ];
-  // Copilot's robot: square glowing eyes and a grille mouth on the face plate.
-  // Built only for the robot: other species have no grill colour.
-  const grille = sp.robot ? [0, 1, 2, 3, 4].map((i) => rect(96 + i * 12, 78, 6, 8, sp.grill)) : [];
-  const robotFace = !sp.robot ? [] : cheer
-    ? [rect(78, 50, 8, 14, EYE), rect(100, 50, 8, 14, EYE), rect(84, 42, 18, 10, EYE), rect(142, 50, 8, 14, EYE), rect(164, 50, 8, 14, EYE), rect(148, 42, 18, 10, EYE),
-      rect(98, 80, 54, 6, EYE), rect(92, 74, 8, 8, EYE), rect(150, 74, 8, 8, EYE)]
+  // Copilot: the logo's two upright pill eyes, low in the face plate.
+  const pill = (x) => [rect(x + 3, 117, 14, 4, EYE), rect(x, 121, 20, 30, EYE), rect(x + 3, 151, 14, 4, EYE)];
+  const smile = (c) => [rect(c - 12, 132, 7, 12, EYE), rect(c - 7, 125, 14, 8, EYE), rect(c + 5, 132, 7, 12, EYE)];
+  const copilotFace = !sp.copilot ? [] : cheer
+    ? [...smile(99), ...smile(151)]
     : urging
-      ? [rect(74, 32, 38, 40, EYE), rect(138, 32, 38, 40, EYE), rect(78, 36, 12, 12, WH), rect(142, 36, 12, 12, WH), rect(114, 76, 22, 14, EYE), rect(200, 18, 8, 12, "#89dceb")]
+      ? [rect(86, 112, 26, 42, EYE), rect(138, 112, 26, 42, EYE), rect(94, 124, 10, 14, sp.plate), rect(146, 124, 10, 14, sp.plate), rect(214, 60, 8, 12, "#89dceb"), rect(216, 54, 4, 6, "#89dceb")]
       : rest
-        ? [rect(78, 52, 30, 6, EYE), rect(142, 52, 30, 6, EYE), ...grille]
-        : [rect(78, 38, 30, 28, EYE), rect(142, 38, 30, 28, EYE), rect(82, 42, 10, 8, WH), rect(146, 42, 10, 8, WH), ...grille];
+        ? [rect(87, 134, 24, 6, EYE), rect(139, 134, 24, 6, EYE)]
+        : [...pill(89), ...pill(141)];
   const eyes2 = sp.arch
     ? [...archFace, rect(116, 104, 22, 8, "#ef6a7e"), rect(170, 104, 22, 8, "#ef6a7e")]
     : sp.round
       ? roundFace
-      : sp.robot
-        ? robotFace
+      : sp.copilot
+        ? copilotFace
         : eyes;
 
   // Claws. Typing: they alternate. Waving: the right one waves up. Cheering: both flap high.
-  const [LX, RX, CW] = sp.arch ? [26, 194, 30] : sp.round ? [16, 208, 26] : sp.robot ? [18, 208, 24] : [0, 225, 25];
+  const [LX, RX, CW] = sp.arch ? [26, 194, 30] : sp.round ? [16, 208, 26] : [0, 225, 25];
   let leftClaw = rect(LX, 122, CW, 40, SHADE);
   let rightClaw = rect(RX, 122, CW, 40, SHADE);
   if (typing) {
@@ -264,21 +281,27 @@ export function duckMood(m, height, { still = false, species = "crab", pace = 1 
   let props = null;
   if (typing) {
     // Sitting behind a MacBook: we see the silver lid with its glowing apple, the screen's light on the face.
+    // Copilot's eyes sit low in its face, so it gets a lower lid and peeks over it.
     const SILVER = "#c9ced6", EDGE = "#a7adb8", DECK = "#aeb4c0";
-    const glow = motion(rect(40, 56, 170, 44, "#8fd0ff"), "opacity", { from: 0.06, to: 0.2, period: fast(900), easing: "ease-in-out" });
+    const lidTop = sp.copilot ? 158 : 100, lidH = 188 - lidTop;
+    const glow = motion(rect(40, sp.copilot ? 99 : 56, 170, 44, "#8fd0ff"), "opacity", { from: 0.06, to: 0.2, period: fast(900), easing: "ease-in-out" });
     // The lid shows the maker's logo: the white apple, or for Antigravity its rainbow arch.
     const lid = sp.arch
       ? div().absolute().left(0).top(0).w(1).h(1)
         .child(rect(120, 130, 12, 4, "#FC413D")).child(rect(116, 134, 20, 4, "#F5A83A")).child(rect(112, 138, 28, 4, "#9BCB4E"))
         .child(rect(110, 142, 10, 12, "#3186FF")).child(rect(132, 142, 10, 12, "#3186FF")).child(rect(114, 142, 24, 4, "#3186FF"))
-      : div().absolute().left(0).top(0).w(1).h(1)
-        .child(rect(126, 128, 6, 4, "#ffffff")).child(rect(114, 134, 24, 4, "#ffffff")).child(rect(110, 138, 32, 12, "#ffffff"))
-        .child(rect(114, 150, 24, 6, "#ffffff")).child(rect(138, 138, 6, 6, SILVER));
+      : sp.copilot
+        ? div().absolute().left(0).top(0).w(1).h(1)
+          .child(rect(124, 163, 4, 3, "#ffffff")).child(rect(118, 166, 16, 3, "#ffffff")).child(rect(116, 169, 20, 9, "#ffffff"))
+          .child(rect(118, 178, 16, 4, "#ffffff")).child(rect(132, 169, 4, 4, SILVER))
+        : div().absolute().left(0).top(0).w(1).h(1)
+          .child(rect(126, 128, 6, 4, "#ffffff")).child(rect(114, 134, 24, 4, "#ffffff")).child(rect(110, 138, 32, 12, "#ffffff"))
+          .child(rect(114, 150, 24, 6, "#ffffff")).child(rect(138, 138, 6, 6, SILVER));
     const apple = motion(lid, "opacity", { from: 0.55, to: 1, period: 1400, easing: "ease-in-out" });
     props = div().absolute().left(0).top(0).w(px(1)).h(px(1))
       .child(glow)
-      .child(rect(36, 100, 178, 88, SILVER)).child(rect(36, 100, 178, 4, "#e6e9ee")).child(rect(36, 184, 178, 4, EDGE))
-      .child(rect(36, 104, 4, 80, "#d9dde3")).child(rect(210, 104, 4, 80, EDGE))
+      .child(rect(36, lidTop, 178, lidH, SILVER)).child(rect(36, lidTop, 178, 4, "#e6e9ee")).child(rect(36, 184, 178, 4, EDGE))
+      .child(rect(36, lidTop + 4, 4, lidH - 8, "#d9dde3")).child(rect(210, lidTop + 4, 4, lidH - 8, EDGE))
       .child(apple)
       .child(rect(22, 188, 206, 10, DECK)).child(rect(22, 198, 206, 4, "#8d93a0"));
   } else if (waving) {
@@ -349,9 +372,8 @@ export function duckMood(m, height, { still = false, species = "crab", pace = 1 
 
   // The body group: everything but the legs. It bobs, or hops when cheering.
   let group = div().absolute().left(px(ROOM)).top(0).w(px(250)).h(px(207))
-    .child(leftClaw)
-    .child(rightClaw)
-    .when(!sp.bot && !sp.arch && !sp.round && !sp.robot, (el) => el.child(rect(25, 0, 200, 200, BODY)))
+    .when(sp.arms !== false, (el) => el.child(leftClaw).child(rightClaw))
+    .when(!sp.bot && !sp.arch && !sp.round && !sp.copilot, (el) => el.child(rect(25, 0, 200, 200, BODY)))
     .when(Boolean(sp.arch), (el) => el.children(ARCH.map(([x, y, w, h, c]) => rect(x, y, w, h, c))))
     .when(Boolean(sp.round), (el) => el.children(PENGUIN.map(([x, y, w, h, c]) => rect(x, y, w, h, c))))
     .when(Boolean(sp.bot), (el) => el
@@ -364,25 +386,10 @@ export function duckMood(m, height, { still = false, species = "crab", pace = 1 
     .when(Boolean(sp.patch), (el) => el.child(rect(40, 32, 56, 60, sp.patch)).child(rect(146, 32, 56, 60, sp.patch)))
     .when(Boolean(sp.face), (el) => el.child(rect(64, 22, 112, 88, sp.face)).child(rect(14, 40, 26, 18, sp.face)).child(rect(200, 40, 26, 18, sp.face)))
     .when(Boolean(sp.wings), (el) => el.children(heraldHelmet(rect, motion, px, { cheer, typing, urging, fast })))
-    // Copilot's robot: blinking antenna, ear bolts, a boxy head with its face plate, a neck, and a torso with a light panel.
-    .when(Boolean(sp.robot), (el) => el
-      .child(rect(120, -14, 10, 20, SHADE))
-      .child(motion(rect(112, -28, 26, 16, sp.accent), "opacity", { from: 0.45, to: 1, period: 900, easing: "ease-in-out" }))
-      .child(rect(116, -24, 6, 5, WH))
-      .child(rect(20, 36, 18, 48, SHADE)).child(rect(212, 36, 18, 48, SHADE))
-      .child(rect(24, 52, 10, 14, sp.accent)).child(rect(216, 52, 10, 14, sp.accent))
-      .child(rect(38, 4, 174, 108, BODY)).child(rect(48, 4, 154, 8, sp.hi)).child(rect(38, 104, 174, 8, SHADE))
-      .child(rect(54, 22, 142, 74, sp.plate))
-      .child(rect(108, 112, 34, 12, SHADE))
-      .child(rect(44, 122, 162, 78, BODY)).child(rect(44, 122, 162, 6, sp.hi))
-      .child(rect(60, 138, 84, 46, sp.plate))
-      .child(motion(rect(68, 146, 12, 12, "#7EE787"), "opacity", { from: 0.35, to: 1, period: fast(700), easing: "linear" }))
-      .child(rect(86, 146, 12, 12, sp.accent)).child(rect(104, 146, 12, 12, "#F2CC60"))
-      .child(rect(68, 166, 60, 8, "#30363D")).child(rect(68, 166, 34, 8, EYE)))
+    .when(Boolean(sp.copilot), (el) => el.children(copilotHead(sp).map(([x, y, w, h, c]) => rect(x, y, w, h, c))))
     .children(eyes2)
     // company badge on a lanyard, hanging at the right side of the chest
-    .when(Boolean(sp.robot), (el) => el.child(rect(177, 124, 6, 12, BADGE_TOP)).child(rect(160, 136, 40, 48, BADGE)).child(rect(160, 136, 40, 10, BADGE_TOP)).child(rect(170, 152, 20, 14, SHADE)).child(rect(166, 172, 28, 6, SHADE)))
-    .when(!sp.bot && !sp.arch && !sp.round && !sp.robot, (el) => el.child(rect(181, 82, 6, 38, BADGE_TOP)).child(rect(163, 120, 42, 56, BADGE)).child(rect(163, 120, 42, 12, BADGE_TOP)).child(rect(174, 140, 20, 16, SHADE)).child(rect(170, 162, 28, 6, SHADE)))
+    .when(!sp.bot && !sp.arch && !sp.round && !sp.copilot, (el) => el.child(rect(181, 82, 6, 38, BADGE_TOP)).child(rect(163, 120, 42, 56, BADGE)).child(rect(163, 120, 42, 12, BADGE_TOP)).child(rect(174, 140, 20, 16, SHADE)).child(rect(170, 162, 28, 6, SHADE)))
     .when(Boolean(props), (el) => el.child(props));
   group = cheer
     ? motion(group, "top", { from: 0, to: px(-18), period: 300, easing: "ease-in-out" })
