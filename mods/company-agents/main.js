@@ -740,6 +740,26 @@ export default class Agents extends View {
     }
   }
 
+  // A desk's nameplate: a notched pixel plate like the office's other panels, with a status light, the name in the office
+  // font and how long the agent has been in this state. Focus, search hits and attention colour the frame and the light,
+  // not the whole plate; a hint or a clash replaces the name with its own text in its colour.
+  nameplate(a, { text, hinted, cl, clText, lit, hot, isUrge, isSnooze, width, font }) {
+    const clash = cl ? (cl.kind === "file" ? "#ff5370" : "#f9b84a") : null;
+    const alert = hinted ? "#cba6f7" : clash;
+    const light = alert ?? (hot ? "#f38ba8" : a.status === "done" ? "#a6e3a1" : a.status === "working" ? "#89b4fa" : isUrge ? "#fab387" : isSnooze ? "#585b70" : "#7f849c");
+    const frame = alert ?? (hot ? "#f38ba8" : lit ? "#f9e2af" : isUrge ? "#fab387" : "#45475a");
+    const fill = hot ? "#2b1d29" : lit ? "#262433" : "#181825";
+    const blink = hot || a.status === "working" ? { from: 0.3, to: 1, period: hot ? 420 : 900, easing: "ease-in-out" } : null;
+    // Never wider than the desk: a long name ends in "…" and hovering the plate shows all of it.
+    const full = hinted ?? (cl ? clText : text);
+    return h_flex().id(`plate-${a.address}`).relative().mt(4).max_w(width).h(17).pl(6).pr(7).gap(4).items_center()
+      .tooltip(String(full ?? ""))
+      .children(box(frame, fill, "#11111b"))
+      .child(blink ? div().relative().size(5).flex_none().bg(light).loop("opacity", blink) : div().relative().size(5).flex_none().bg(light))
+      .child(div().relative().min_w(0).truncate().font_family(font).font_bold().text_size(9.5)
+        .text_color(alert ?? (isSnooze ? "#a6adc8" : "#cdd6f4")).child(full));
+  }
+
   // Live sub-agents of `addr`, depth first, each with the tree lines in front of it.
   tree(all, addr, lead = []) {
     const kids = all.filter((k) => k.parent === addr && k.state === "live");
@@ -1834,6 +1854,7 @@ export default class Agents extends View {
       const isIdle = a.status === "idle";
       const isUrge = isIdle && unseen >= IDLE_URGE;
       const isSnooze = isIdle && unseen >= IDLE_SNOOZE && !isUrge;
+      const timeTxt = when && cellW >= 90 ? (isUrge ? `⏰ ${duration(waited)}` : isSnooze ? `zzz ${duration(waited)}` : duration(waited)) : "";
       const isNudged = this.nudged.has(a.address);
       // The pet sits on a chair behind a wooden desk (the MacBook is part of the pet).
       const ctr = DUCK_CENTER * petW;
@@ -1842,7 +1863,8 @@ export default class Agents extends View {
       const dir = left + petW / 2 < sz.width / 2 ? 1 : -1;
       const dx = dir * (petW + kk(30));
       const dy = Math.round(PET * 0.42);
-      const seat = div().relative().w(petW).h(PET + kk(28))
+      // Room under the desk for the runners (shell jobs); without them the nameplate sits right under the desk.
+      const seat = div().relative().w(petW).h(PET + kk(act.jobs > 0 ? 28 : 20))
         // Office chair seen from behind: a tall rounded back with a headrest, a lighter cushion with a centre seam,
         // two rounded armrests, then a pole and a star base with wheels under the desk.
         .child(div().absolute().left(ctr - petW * 0.4 - kk(2)).top(-kk(12)).w(petW * 0.8 + kk(4)).h(PET * 0.9 + kk(2)).rounded_t(11).bg("#1c1e2c"))
@@ -1971,15 +1993,14 @@ export default class Agents extends View {
         .on_mouse_down("right", (_e, cx) => { cx.stop_propagation(); openFigures(a.space_name); })
         .tooltip(`${a.program?.name ?? ""} · ${isUrge ? `idle for ${duration(waited)} · click to focus` : isSnooze ? `snoozing (${duration(waited)}) · click to focus` : a.status} · ${text}${branch ? ` · ${branch}` : ""}${clTip ? ` · ${clTip}` : ""}${ctx ? ` · ${vitalsTip(ctx)}` : ""}${act.interns.length ? ` · ${act.interns.length} sub-agent${act.interns.length > 1 ? "s" : ""}` : ""}${act.jobs ? ` · ${act.jobs} shell job${act.jobs > 1 ? "s" : ""}${act.long ? ` (${act.long} over a minute)` : ""}` : ""} · drag to move`)
         .child(seat)
-        .child(div().mt(6).max_w(Math.max(petW + 22, cellW - 4)).px(5).h(15).flex().items_center()
-          .bg(this.hint?.addr === a.address ? "#cba6f7" : cl ? (cl.kind === "file" ? "#ff5370" : "#f9b84a") : a.focused || (q && hitOf(a)) ? "#f9e2af" : hot ? "#f38ba8" : isUrge ? "#fab387" : isSnooze ? "#45475a" : "#0f111acc")
-          .text_size(10.5).text_color(this.hint?.addr === a.address ? "#1e1233" : cl ? "#2a0f16" : a.focused || (q && hitOf(a)) ? "#2a1a14" : isUrge ? "#1e1e2e" : isSnooze ? "#cdd6f4" : "#ffffff").truncate()
-          .child(this.hint?.addr === a.address ? this.hint.text : cl ? clText : `${text}${when && cellW >= 90 ? (isUrge ? ` · idle ${duration(waited)} ⏰` : isSnooze ? ` · zzz ${duration(waited)}` : ` · ${duration(waited)}`) : ""}`))
-        .when(Boolean(branch) || Boolean(modelTxt), (el) => el.child(h_flex().mt(2).gap(3).items_center().max_w(Math.max(petW + 22, cellW - 4)).text_size(9.5)
+        .child(this.nameplate(a, { text, hinted: this.hint?.addr === a.address ? this.hint.text : null, cl, clText, lit: a.focused || Boolean(q && hitOf(a)), hot, isUrge, isSnooze, width: petW + kk(12), font: monoF }))
+        // Under the plate: the branch, the model and how long the agent has been in this state.
+        .when(Boolean(branch) || Boolean(modelTxt) || Boolean(timeTxt), (el) => el.child(h_flex().mt(2).gap(3).items_center().max_w(Math.max(petW + 22, cellW - 4)).text_size(9.5)
           .when(Boolean(branch), (el) => el
             .child(div().relative().w(8).h(10).flex_none().children([[0, 0, 2, 2], [0, 8, 2, 2], [5, 2, 2, 2], [0, 2, 1, 6], [1, 4, 5, 1]].map(([x, y, w, h]) => div().absolute().left(x).top(y).w(w).h(h).bg("#89b4fa"))))
             .child(div().min_w(0).truncate().font_family(monoF).text_color("#89b4fa").child(branch)))
-          .when(Boolean(modelTxt), (el) => el.child(div().min_w(0).truncate().text_color(t.dim).child(branch ? `· ${modelTxt}` : modelTxt)))))
+          .when(Boolean(modelTxt), (el) => el.child(div().min_w(0).truncate().text_color(t.dim).child(branch ? `· ${modelTxt}` : modelTxt)))
+          .when(Boolean(timeTxt), (el) => el.child(div().flex_none().font_family(monoF).text_color(isUrge ? "#fab387" : t.dim).child(branch || modelTxt ? `· ${timeTxt}` : timeTxt)))))
         .when(ctx != null && cellW >= 90, (el) => el.child(div().mt(2).max_w(Math.max(petW + 22, cellW - 4)).child(vitalsBars(t, ctx, `farm-vitals-${a.address}`, Math.max(petW + 22, cellW - 4)))));
     });
     // A dotted line of sparks between two desks that are about to clash.
