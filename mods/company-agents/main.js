@@ -526,7 +526,8 @@ export default class Agents extends View {
   waitOf(address, status, now) {
     const at = this.changed[address]?.at ?? now;
     if (status !== "idle") return now - at;
-    if (address === this.watching) return 0;
+    // A sub-agent waits on its lead, not on you: idle, it stays on a calm break (no zzz, no alarm).
+    if (address === this.watching || this.calm?.has(address)) return 0;
     return now - Math.max(at, this.seen[address] ?? 0);
   }
 
@@ -1630,6 +1631,8 @@ export default class Agents extends View {
     this.listed = new Map(list.map((a) => [a.address, a.status]));
     const all = terminals();
     this.migratePins(all);
+    const liveNow = new Set(all.filter((k) => k.state === "live").map((k) => k.address));
+    this.calm = new Set(all.filter((k) => k.parent && liveNow.has(k.parent)).map((k) => k.address));
     const shown = focused()?.agent;
     const now = Date.now();
     this.track(list, now, cx);
