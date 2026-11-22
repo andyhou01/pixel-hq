@@ -2226,7 +2226,6 @@ export default class Agents extends View {
     ];
     const MAG = [[2, 0, 4, 1], [1, 1, 1, 1], [6, 1, 1, 1], [0, 2, 1, 4], [7, 2, 1, 4], [1, 6, 1, 1], [6, 6, 1, 1], [2, 7, 4, 1], [7, 7, 2, 1], [8, 8, 2, 1], [9, 9, 1, 1]];
     const magnifier = (c) => div().relative().w(15).h(15).flex_none().children(MAG.map(([x, y, w, h]) => div().absolute().left(x * 1.5).top(y * 1.5).w(w * 1.5).h(h * 1.5).bg(c)));
-    const corgi = image("mods/company-brand/logo.png").size(24).flex_none();
     const mono = "JetBrains Mono";
 
     return v_flex()
@@ -2237,14 +2236,20 @@ export default class Agents extends View {
       .border_t(1)
       .border_color(t.border)
       .text_size(13)
-      .when(!collapsed, (el) =>
-        el.child(div().px(10).pt(10).pb(2).flex_none().child(
-          div().relative().h(30).w_full().child(div().absolute().left(2).right(2).bottom(-2).h(2).bg(hqShade("#11111b")))
-            .children(frame(hqShade("#45475a"), hqShade("#181825")))
-            .child(h_flex().size_full().px(10).gap(8).items_center().justify_between()
-              .child(h_flex().min_w(0).gap(7).items_center().child(corgi)
-                .child(div().min_w(0).truncate().font_family(mono).font_bold().text_size(10).text_color("#89b4fa").child("ENGINEERING FLOOR")))
-              .child(h_flex().gap(10).items_center().flex_none()
+      .when(!collapsed, (el) => el.child(div().id("staff-search").relative().mx(10).mt(10).mb(8).h(32).flex_none()
+        .child(div().absolute().left(2).right(2).bottom(-2).h(2).bg(hqShade("#11111b")))
+        .children(frame(this.typing ? "#89b4fa" : hqShade("#45475a"), hqShade("#11111b")))
+        .child(h_flex().size_full().pl(10).pr(8).gap(8).items_center()
+          .child(magnifier(this.typing ? "#89b4fa" : "#7f849c"))
+          .child(div().flex_1().min_w(0).h_full().flex().items_center().cursor_text().on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+            .child(Input.new(this.searchInput).h_full().text_size(12).font_family(mono).text_color(t.foreground)))
+          .when(Boolean(q), (e2) => e2
+            .child(div().flex_none().text_size(10.5).font_family(mono).text_color(t.dim).child(`${hits.length}/${list.length}`))
+            .child(div().id("staff-clear").flex_none().px(4).text_size(14).font_family(mono).text_color(t.dim).cursor_pointer().hover((s) => s.text_color(t.foreground))
+              .on_click((_e, cx) => { this.searchInput.set_value(""); this.query = ""; cx.notify(); }).child("×")))
+          // The floor's tools share the bar: a 2px rule, then needs-you, hire, figures, floor plan and sort.
+          .child(div().w(2).h(16).flex_none().bg(hqShade("#45475a")))
+          .child(h_flex().gap(8).items_center().flex_none()
                 .when(blockedAll.length > 0, (el) => el.child(div().id("ag-needs-you").relative().w(14).h(14).flex_none().cursor_pointer()
                   .tooltip(`${blockedAll.length} ${blockedAll.length === 1 ? "agent needs" : "agents need"} you · open the list`)
                   .on_click(() => this.openNeedsYou())
@@ -2277,15 +2282,13 @@ export default class Agents extends View {
                     .on_click(() => openOverlay({ mod: "company-agents", kind: "popup", frame: "none", width: 200, height: 140, props: { sortMenu: true } }))
                     .tooltip(`Sort agents: ${sort.label}`)
                     .child(svg(`mods/company-agents/${sort.icon}.svg`).size(14)),
-                ))),
-        )),
-      )
+          )))))
       .when(!collapsed && this.hiring.open, (el) => {
         const h = this.hiring;
         const box = (state) => div().w_full().h(26).px(8).flex().items_center().bg(hqShade("#181825")).border_1().border_color(hqShade("#45475a"))
           .child(Input.new(state).h_full().w_full().text_size(11.5).font_family(mono).text_color(t.foreground));
         const btn = (id, text, fill, ink, act) => div().id(id).px(10).h(24).flex().items_center().cursor_pointer().bg(fill).text_size(10.5).font_family(mono).font_bold().text_color(ink).on_click(act).child(text);
-        return el.child(div().relative().mx(10).mt(8).flex_none().children(frame("#89b4fa", hqShade("#11111b")))
+        return el.child(div().relative().mx(10).mb(8).flex_none().children(frame("#89b4fa", hqShade("#11111b")))
           .child(v_flex().px(12).py(10).gap(6)
             .child(div().font_family(mono).font_bold().text_size(10).text_color("#89b4fa").child("HIRE STAFF · NEW WORKTREE"))
             .child(box(this.ticketInput))
@@ -2297,17 +2300,6 @@ export default class Agents extends View {
             .child(h_flex().gap(6).child(btn("hire-go", h.busy ? "Creating..." : "Hire", "#89b4fa", hqShade("#11111b"), (_e, cx) => this.doHire(cx)))
               .child(btn("hire-cancel", "Cancel", hqShade("#313244"), "#cdd6f4", (_e, cx) => this.openHire(cx))))));
       })
-      .when(!collapsed, (el) => el.child(div().id("staff-search").relative().mx(10).mt(4).mb(8).h(32).flex_none()
-        .child(div().absolute().left(2).right(2).bottom(-2).h(2).bg(hqShade("#11111b")))
-        .children(frame(this.typing ? "#89b4fa" : hqShade("#45475a"), hqShade("#11111b")))
-        .child(h_flex().size_full().px(10).gap(8).items_center()
-          .child(magnifier(this.typing ? "#89b4fa" : "#7f849c"))
-          .child(div().flex_1().min_w(0).h_full().flex().items_center().cursor_text().on_mouse_down("left", (_e, cx) => cx.stop_propagation())
-            .child(Input.new(this.searchInput).h_full().text_size(12).font_family(mono).text_color(t.foreground)))
-          .when(Boolean(q), (e2) => e2
-            .child(div().flex_none().text_size(10.5).font_family(mono).text_color(t.dim).child(`${hits.length}/${list.length}`))
-            .child(div().id("staff-clear").flex_none().px(4).text_size(14).font_family(mono).text_color(t.dim).cursor_pointer().hover((s) => s.text_color(t.foreground))
-              .on_click((_e, cx) => { this.searchInput.set_value(""); this.query = ""; cx.notify(); }).child("×"))))))
       .child(collapsed ? v_flex().id("ag-list").flex_1().min_h(0).px(0).overflow_y_scrollbar().mode("always").children(rows) : farm)
       .when(collapsed && settledCount > 0, (el) => el.child(h_flex().h(22).px(6).items_center().child(div().id("settled-undo-rail").px(6).h(17).flex().items_center().border_1().border_color("#a6e3a155").bg("#a6e3a122").text_size(10).text_color("#a6e3a1").cursor_pointer()
         .tooltip("Bring settled staff back on every floor")
