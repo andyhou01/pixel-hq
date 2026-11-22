@@ -7,6 +7,11 @@ import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { spaces, machines, panes, agents, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout } from "herdr";
 
+// Pixel HQ's dark greys follow the theme (themes/pixel-hq.json, themes/pixel-hq-black.json):
+// each Catppuccin shade maps to a theme colour, and keeps its alpha.
+const HQ_SHADE = { "#11111b": "canvas", "#0f111a": "canvas", "#181825": "chrome", "#1e1e2e": "background", "#262637": "surface", "#313244": "raised", "#45475a": "ansi0", "#585b70": "ansi8" };
+const hqShade = (hex) => { const c = theme()?.[HQ_SHADE[hex.slice(0, 7)]]; return typeof c === "string" && c.startsWith("#") ? c.slice(0, 7) + hex.slice(7) : hex; };
+
 function find(node, id) {
   if (node?.id === id) return node;
   for (const child of node?.children ?? []) {
@@ -388,7 +393,7 @@ export default class Spaces extends View {
       const line = connected ? LINES[n % LINES.length] : t.dim;
       const draw = (r) => (collapsed ? this.compact(r, t) : this.row(r, t, line));
       const bullet = div().relative().w(20).h(20).flex_none().children(pix(line, 20, 20))
-        .child(h_flex().absolute().left(0).top(0).size(20).items_center().justify_center().font_family(MONO).font_bold().text_size(10).text_color("#11111b")
+        .child(h_flex().absolute().left(0).top(0).size(20).items_center().justify_center().font_family(MONO).font_bold().text_size(10).text_color(hqShade("#11111b"))
           .child([...(m ?? "this computer")][0].toUpperCase()))
         .when(!folded && !rebuilt && !login && (mine.length > 0 || !loading(m)), (el) => el.child(div().absolute().left(8).top(18).w(4).h(10).bg(line)));
       const icon = svg(`mods/company-spaces/${m ? "server" : "monitor"}.svg`).size(13).flex_none();
@@ -396,7 +401,7 @@ export default class Spaces extends View {
       const head = h_flex().relative().id(`machine-${m ?? "local"}`).h(collapsed ? 26 : 28).flex_none().px(collapsed ? 0 : 8).gap(7).items_center().text_size(11).text_color(t.dim)
         .when(collapsed, el => el.mt(4).w(RAIL_CELL).justify_center().tooltip(login ? `${m} needs a login: run ${login}. Click for Copy.` : m ? `${m} · ${connected ? "connected" : (machine?.state ?? "asleep").replace(/_/g, " ")}` : "This computer"))
         .when(collapsed, el => el.cursor_pointer())
-        .when(!collapsed, el => el.bg("#181825").mb(2).h(30).child(div().absolute().left(0).right(0).bottom(0).h(2).bg(line)))
+        .when(!collapsed, el => el.bg(hqShade("#181825")).mb(2).h(30).child(div().absolute().left(0).right(0).bottom(0).h(2).bg(line)))
         .hover(s => s.bg(t.hover))
         .on_click((_e, cx) => {
           if (renaming) return;

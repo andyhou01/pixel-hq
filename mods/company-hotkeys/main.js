@@ -1,6 +1,11 @@
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { run, props, closeOverlay, keys, appHome, readTextFile } from "herdr";
+import { run, props, closeOverlay, keys, appHome, readTextFile, theme } from "herdr";
+
+// Pixel HQ's dark greys follow the theme (themes/pixel-hq.json, themes/pixel-hq-black.json):
+// each Catppuccin shade maps to a theme colour, and keeps its alpha.
+const HQ_SHADE = { "#11111b": "canvas", "#0f111a": "canvas", "#181825": "chrome", "#1e1e2e": "background", "#262637": "surface", "#313244": "raised", "#45475a": "ansi0", "#585b70": "ansi8" };
+const hqShade = (hex) => { const c = theme()?.[HQ_SHADE[hex.slice(0, 7)]]; return typeof c === "string" && c.startsWith("#") ? c.slice(0, 7) + hex.slice(7) : hex; };
 
 const MONO = "JetBrains Mono, Menlo, monospace";
 
@@ -148,7 +153,7 @@ export default class CompanyHotkeys extends View {
       .size_full()
       .min_h(0)
       .relative()
-      .children(box("#45475a", "#181825", "#11111b"))
+      .children(box(hqShade("#45475a"), hqShade("#181825"), hqShade("#11111b")))
       .child(
         v_flex()
           .relative()
@@ -165,7 +170,7 @@ export default class CompanyHotkeys extends View {
               .items_center()
               .justify_between()
               .border_b(1)
-              .border_color("#313244")
+              .border_color(hqShade("#313244"))
               .child(
                 h_flex()
                   .gap(8)
@@ -200,7 +205,7 @@ export default class CompanyHotkeys extends View {
                   .items_center()
                   .justify_center()
                   .cursor_pointer()
-                  .children(box("#45475a", "#313244", "#11111b"))
+                  .children(box(hqShade("#45475a"), hqShade("#313244"), hqShade("#11111b")))
                   .hover((s) => s.text_color("#ffffff"))
                   .on_click((_e, _cx) => this.closeModal())
                   .child(
@@ -228,14 +233,14 @@ export default class CompanyHotkeys extends View {
                 .gap(5)
                 .bg("#14141e")
                 .border_1()
-                .border_color("#262637")
+                .border_color(hqShade("#262637"))
                 .child(
                   h_flex()
                     .px(8)
                     .py(3)
-                    .bg("#1e1e2e")
+                    .bg(hqShade("#1e1e2e"))
                     .border_1()
-                    .border_color("#313244")
+                    .border_color(hqShade("#313244"))
                     .items_center()
                     .child(
                       div()
@@ -257,9 +262,9 @@ export default class CompanyHotkeys extends View {
                           .id(`hotkey-row-${catIdx}-${itemIdx}`)
                           .px(8)
                           .py(4)
-                          .bg("#181825")
+                          .bg(hqShade("#181825"))
                           .border_1()
-                          .border_color("#262637")
+                          .border_color(hqShade("#262637"))
                           .items_center()
                           .justify_between()
                           .hover((s) => s.bg("#222334").border_color("#3b3e5b"))
@@ -295,9 +300,9 @@ export default class CompanyHotkeys extends View {
                                       div()
                                         .px(6)
                                         .py(1.5)
-                                        .bg("#11111b")
+                                        .bg(hqShade("#11111b"))
                                         .border_1()
-                                        .border_color("#45475a")
+                                        .border_color(hqShade("#45475a"))
                                         .text_size(9)
                                         .font_bold()
                                         .font_family(MONO)
@@ -308,7 +313,7 @@ export default class CompanyHotkeys extends View {
                                       div()
                                         .font_family(MONO)
                                         .text_size(11)
-                                        .text_color("#585b70")
+                                        .text_color(hqShade("#585b70"))
                                         .child("—"),
                                     ],
                               ),
@@ -326,7 +331,7 @@ export default class CompanyHotkeys extends View {
               .items_center()
               .justify_between()
               .border_t(1)
-              .border_color("#313244")
+              .border_color(hqShade("#313244"))
               .font_family(MONO)
               .text_size(9)
               .text_color("#6c7086")

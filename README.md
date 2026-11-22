@@ -52,7 +52,7 @@
 - **Hotkeys sheet.** The status bar's `HOTKEYS` button opens a read-only cheat sheet of the shortcuts for floors, panes and layouts.
 - **A team status bar.** "Pixel HQ", how many agents are on the team, and how many are typing, blocked, shipped or on break. It is drawn in pixel style too, with pixel buttons for the MusicBox, the Floor Switcher, the Hotkeys sheet and the command palette. Right-click the MusicBox button to hide it from the bar.
 - **A company sign.** The Pixel HQ corgi logo with "Pixel HQ / engineering floor" at the top of the sidebar.
-- **A Catppuccin Mocha palette** with a soft blue accent, in a matching terminal theme.
+- **Two themes, black by default.** `pixel-hq-black` paints the window black with a soft blue accent; `pixel-hq` is the original Catppuccin Mocha look with its dark blue-gray panels. Switch in Settings > Look, or `herdr-app do app.theme --name pixel-hq` (and `--name pixel-hq-black` to go back). The panels, the dialogs and the office's walls and floor all follow the theme.
 
 ## The team
 
@@ -106,14 +106,14 @@ Ask your agent:
 > Read ~/.config/herdr-app/AGENTS.md, then add this layout: herdr.dev/layouts/bnhan2710/pixel-hq
 
 Or by hand: copy `layouts/`, `mods/` and `themes/` into `~/.config/herdr-app/`, quit and reopen Herdr once,
-then pick **pixel-hq** in Settings > Look. It brings its own **pixel-hq** theme, dark even when your system is in light mode.
+then pick **pixel-hq** in Settings > Look. It brings two themes, **pixel-hq-black** (the default) and the Catppuccin **pixel-hq**, both dark even when your system is in light mode.
 
 Mods are trusted code and Herdr does not sandbox them. This repo is about 4,200 lines of JavaScript. The only programs it runs are local helpers
 (`mkdir`, `cp`, `open`, `git` to see what each desk changed and to make worktrees when you hire, and Chrome/ImageMagick when you convert an animated picture in the figures editor). The one thing it writes outside its own folders is the OpenCode status plugin described below (only if OpenCode is installed, once, never overwriting). It only talks to GitHub: the update check reads one tiny public file, and pressing **Update now** downloads this repo's files (see "Update"). Nothing about you is sent. Read it before you install it.
 
 ## Update
 
-Herdr installs a shared layout as a plain copy, so it does not update by itself. When a new version is out, Pixel HQ shows an **Update now** button in the office. It opens a small window that downloads the latest files of this repo's `main` branch straight from GitHub (the file list comes from the GitHub API, with a built-in list as fallback), shows the progress, and then overwrites only the installed Pixel HQ files that changed: `layouts/pixel-hq.json`, `themes/pixel-hq.json` and the `company-*` mods. No agent is involved. It always installs the newest version, even if you skipped a few. If a download fails, the window offers **Retry Auto-Update** or **Use Agent Tab**, which opens a new tab with an agent (the one you are in, else Claude) on the prompt below. You can also ask any agent yourself:
+Herdr installs a shared layout as a plain copy, so it does not update by itself. When a new version is out, Pixel HQ shows an **Update now** button in the office. It opens a small window that downloads the latest files of this repo's `main` branch straight from GitHub (the file list comes from the GitHub API, with a built-in list as fallback), shows the progress, and then overwrites only the installed Pixel HQ files that changed: `layouts/pixel-hq.json`, `themes/pixel-hq.json`, `themes/pixel-hq-black.json` and the `company-*` mods. No agent is involved. It always installs the newest version, even if you skipped a few. If a download fails, the window offers **Retry Auto-Update** or **Use Agent Tab**, which opens a new tab with an agent (the one you are in, else Claude) on the prompt below. You can also ask any agent yourself:
 
 > Read ~/.config/herdr-app/AGENTS.md, then update my Pixel HQ layout to the latest version from herdr.dev/layouts/bnhan2710/pixel-hq. Overwriting my installed pixel-hq files is intended; keep my other layouts and mods.
 

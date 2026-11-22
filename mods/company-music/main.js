@@ -2,6 +2,11 @@ import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { theme, run, shared, setShared, closeOverlay, checking, appHome, exec, window, props, readTextFile, writeTextFile, settings } from "herdr";
 
+// Pixel HQ's dark greys follow the theme (themes/pixel-hq.json, themes/pixel-hq-black.json):
+// each Catppuccin shade maps to a theme colour, and keeps its alpha.
+const HQ_SHADE = { "#11111b": "canvas", "#0f111a": "canvas", "#181825": "chrome", "#1e1e2e": "background", "#262637": "surface", "#313244": "raised", "#45475a": "ansi0", "#585b70": "ansi8" };
+const hqShade = (hex) => { const c = theme()?.[HQ_SHADE[hex.slice(0, 7)]]; return typeof c === "string" && c.startsWith("#") ? c.slice(0, 7) + hex.slice(7) : hex; };
+
 const MONO = "JetBrains Mono, Menlo, monospace";
 
 const notch = (c, [l, r, t, b]) => [
@@ -571,7 +576,7 @@ export default class CompanyMusic extends View {
         .h(22)
         .px(8)
         .items_center()
-        .children(box(isCopied ? "#a6e3a1" : "#45475a", isCopied ? "#a6e3a122" : "#313244", "#11111b"))
+        .children(box(isCopied ? "#a6e3a1" : hqShade("#45475a"), isCopied ? "#a6e3a122" : hqShade("#313244"), hqShade("#11111b")))
         .cursor_pointer()
         .hover((s) => s.text_color("#ffffff"))
         .on_click((_e, cx) => {
@@ -601,9 +606,9 @@ export default class CompanyMusic extends View {
         .items_center()
         .justify_between()
         .p(6)
-        .bg("#181825")
+        .bg(hqShade("#181825"))
         .border_1()
-        .border_color("#45475a")
+        .border_color(hqShade("#45475a"))
         .child(div().font_family(MONO).text_size(11).text_color("#a6e3a1").child(cmd))
         .child(copyBtn(cmd));
 
@@ -618,7 +623,7 @@ export default class CompanyMusic extends View {
       .size_full()
       .min_h(0)
       .relative()
-      .children(box("#45475a", "#181825", "#11111b"))
+      .children(box(hqShade("#45475a"), hqShade("#181825"), hqShade("#11111b")))
       .child(
         v_flex()
           .relative()
@@ -632,7 +637,7 @@ export default class CompanyMusic extends View {
               .w_full()
               .pb(6)
               .border_b(1)
-              .border_color("#313244")
+              .border_color(hqShade("#313244"))
               .items_center()
               .justify_between()
               .child(
@@ -654,7 +659,7 @@ export default class CompanyMusic extends View {
                   .px(8)
                   .items_center()
                   .cursor_pointer()
-                  .children(box("#45475a", "#313244", "#11111b"))
+                  .children(box(hqShade("#45475a"), hqShade("#313244"), hqShade("#11111b")))
                   .hover((s) => s.text_color("#ffffff"))
                   .on_click(() => closeOverlay(props()?.overlay))
                   .child(
@@ -671,9 +676,9 @@ export default class CompanyMusic extends View {
         h_flex()
           .w_full()
           .p(3)
-          .bg("#11111b")
+          .bg(hqShade("#11111b"))
           .border_1()
-          .border_color("#313244")
+          .border_color(hqShade("#313244"))
           .gap(4)
           .child(
             h_flex()
@@ -681,7 +686,7 @@ export default class CompanyMusic extends View {
               .h(28)
               .items_center()
               .justify_center()
-              .when(isMac, (el) => el.bg("#313244").border_1().border_color("#cba6f7"))
+              .when(isMac, (el) => el.bg(hqShade("#313244")).border_1().border_color("#cba6f7"))
               .cursor_pointer()
               .text_size(11)
               .font_semibold()
@@ -698,7 +703,7 @@ export default class CompanyMusic extends View {
               .h(28)
               .items_center()
               .justify_center()
-              .when(isWindows, (el) => el.bg("#313244").border_1().border_color("#89b4fa"))
+              .when(isWindows, (el) => el.bg(hqShade("#313244")).border_1().border_color("#89b4fa"))
               .cursor_pointer()
               .text_size(11)
               .font_semibold()
@@ -715,7 +720,7 @@ export default class CompanyMusic extends View {
               .h(28)
               .items_center()
               .justify_center()
-              .when(isLinux, (el) => el.bg("#313244").border_1().border_color("#a6e3a1"))
+              .when(isLinux, (el) => el.bg(hqShade("#313244")).border_1().border_color("#a6e3a1"))
               .cursor_pointer()
               .text_size(11)
               .font_semibold()
@@ -732,9 +737,9 @@ export default class CompanyMusic extends View {
           .w_full()
           .flex_1()
           .p(12)
-          .bg("#11111b")
+          .bg(hqShade("#11111b"))
           .border_1()
-          .border_color("#313244")
+          .border_color(hqShade("#313244"))
           .gap(10)
           .when(isWindows, (el) =>
             el
@@ -824,17 +829,17 @@ export default class CompanyMusic extends View {
                       .px(10)
                       .when(isCurrentOsTab, (el) =>
                         el
-                          .bg(isInstalling ? "#45475a" : "#89b4fa")
-                          .text_color(isInstalling ? "#cdd6f4" : "#11111b")
+                          .bg(isInstalling ? hqShade("#45475a") : "#89b4fa")
+                          .text_color(isInstalling ? "#cdd6f4" : hqShade("#11111b"))
                           .cursor_pointer()
                           .hover((s) => s.opacity(0.88))
                           .on_click((_e, cx) => this.runAutoInstall(this.guideTab, cx))
                       )
                       .when(!isCurrentOsTab, (el) =>
                         el
-                          .bg("#313244")
+                          .bg(hqShade("#313244"))
                           .border_1()
-                          .border_color("#45475a")
+                          .border_color(hqShade("#45475a"))
                           .text_color(t.dim)
                           .tooltip(`Auto-install is only available on ${this.guideTab}`)
                       )
@@ -850,19 +855,19 @@ export default class CompanyMusic extends View {
                       .px(9)
                       .when(isCurrentOsTab, (el) =>
                         el
-                          .bg("#313244")
+                          .bg(hqShade("#313244"))
                           .border_1()
-                          .border_color("#45475a")
+                          .border_color(hqShade("#45475a"))
                           .text_color("#cdd6f4")
                           .cursor_pointer()
-                          .hover((s) => s.bg("#45475a"))
+                          .hover((s) => s.bg(hqShade("#45475a")))
                           .on_click((_e, cx) => this.openTerminal(this.guideTab, cx))
                       )
                       .when(!isCurrentOsTab, (el) =>
                         el
                           .bg("#24273a")
                           .border_1()
-                          .border_color("#313244")
+                          .border_color(hqShade("#313244"))
                           .text_color(t.dim)
                       )
                       .flex()
@@ -875,16 +880,16 @@ export default class CompanyMusic extends View {
                     div()
                       .h(28)
                       .px(9)
-                      .bg("#313244")
+                      .bg(hqShade("#313244"))
                       .border_1()
-                      .border_color("#45475a")
+                      .border_color(hqShade("#45475a"))
                       .cursor_pointer()
                       .flex()
                       .items_center()
                       .text_size(11)
                       .font_semibold()
                       .text_color("#cdd6f4")
-                      .hover((s) => s.bg("#45475a"))
+                      .hover((s) => s.bg(hqShade("#45475a")))
                       .on_click((_e, cx) => this.checkDeps(cx))
                       .child("🔄 Re-check")
                   )
@@ -895,7 +900,7 @@ export default class CompanyMusic extends View {
                   .px(6)
                   .py(4)
                   .border_1()
-                  .border_color("#313244")
+                  .border_color(hqShade("#313244"))
                   .text_size(10.5)
                   .font_family(MONO)
                   .text_color(t.dim)
@@ -950,7 +955,7 @@ export default class CompanyMusic extends View {
       .size_full()
       .min_h(0)
       .relative()
-      .children(box("#45475a", "#181825", "#11111b"))
+      .children(box(hqShade("#45475a"), hqShade("#181825"), hqShade("#11111b")))
       .child(
         v_flex()
           .relative()
@@ -964,7 +969,7 @@ export default class CompanyMusic extends View {
               .w_full()
               .pb(6)
               .border_b(1)
-              .border_color("#313244")
+              .border_color(hqShade("#313244"))
               .items_center()
               .justify_between()
               .child(
@@ -977,9 +982,9 @@ export default class CompanyMusic extends View {
                     div()
                       .px(5)
                       .py(1)
-                      .bg("#313244")
+                      .bg(hqShade("#313244"))
                       .border_1()
-                      .border_color("#45475a")
+                      .border_color(hqShade("#45475a"))
                       .text_size(9)
                       .font_family(MONO)
                       .text_color("#a6adc8")
@@ -1017,11 +1022,11 @@ export default class CompanyMusic extends View {
                       .px(6)
                       .py(2)
                       .border_1()
-                      .border_color("#45475a")
+                      .border_color(hqShade("#45475a"))
                       .text_size(9.5)
                       .font_family(MONO)
                       .font_bold()
-                      .bg(isMusicHidden ? "#45475a" : "#313244")
+                      .bg(isMusicHidden ? hqShade("#45475a") : hqShade("#313244"))
                       .text_color(isMusicHidden ? "#f9e2af" : t.dim)
                       .hover((s) => s.bg(t.hover).text_color(t.foreground))
                       .tooltip(isMusicHidden ? "Show on status bar" : "Hide MusicBox from status bar")
@@ -1051,7 +1056,7 @@ export default class CompanyMusic extends View {
                       .pb(4)
                       .items_center()
                       .cursor_pointer()
-                      .children(box("#45475a", "#313244", "#11111b"))
+                      .children(box(hqShade("#45475a"), hqShade("#313244"), hqShade("#11111b")))
                       .hover((s) => s.text_color("#ffffff"))
                       .on_click(() => closeOverlay(props()?.overlay))
                       .child(
@@ -1096,9 +1101,9 @@ export default class CompanyMusic extends View {
                   .px(7)
                   .flex()
                   .items_center()
-                  .bg("#11111b")
+                  .bg(hqShade("#11111b"))
                   .border_1()
-                  .border_color("#313244")
+                  .border_color(hqShade("#313244"))
                   .child(Input.new(this.urlInput).font_family(MONO).text_size(11).size_full().text_color(t.foreground))
               )
               .child(
@@ -1109,7 +1114,7 @@ export default class CompanyMusic extends View {
                   .px(10)
                   .items_center()
                   .cursor_pointer()
-                  .children(box(this.busy ? "#45475a" : "#89b4fa", this.busy ? "#313244" : "#89b4fa", "#11111b"))
+                  .children(box(this.busy ? hqShade("#45475a") : "#89b4fa", this.busy ? hqShade("#313244") : "#89b4fa", hqShade("#11111b")))
                   .hover((s) => s.opacity(0.88))
                   .on_click((_e, cx) => this.play(this.urlInput.value(), null, cx))
                   .child(
@@ -1117,7 +1122,7 @@ export default class CompanyMusic extends View {
                       .font_bold()
                       .font_family(MONO)
                       .text_size(10)
-                      .text_color(this.busy ? "#cdd6f4" : "#11111b")
+                      .text_color(this.busy ? "#cdd6f4" : hqShade("#11111b"))
                       .child(this.busy ? "STARTING..." : "▶ PLAY"),
                   ),
               )
@@ -1162,9 +1167,9 @@ export default class CompanyMusic extends View {
                         b
                           .px(6)
                           .py(1)
-                          .bg("#313244")
+                          .bg(hqShade("#313244"))
                           .border_1()
-                          .border_color("#45475a")
+                          .border_color(hqShade("#45475a"))
                           .text_size(9.5)
                           .font_bold()
                           .text_color("#f9e2af")
@@ -1243,7 +1248,7 @@ export default class CompanyMusic extends View {
                       .font_family(MONO)
                       .text_size(10)
                       .font_bold()
-                      .text_color("#585b70")
+                      .text_color(hqShade("#585b70"))
                       .child("(◎) ══════════ (◎)")
                   )
               )
@@ -1259,7 +1264,7 @@ export default class CompanyMusic extends View {
                       ? "#f9e2af"
                       : isPaused
                       ? "#cba6f7"
-                      : "#313244"
+                      : hqShade("#313244")
                   )
                   .text_size(8.5)
                   .font_family(MONO)
@@ -1271,7 +1276,7 @@ export default class CompanyMusic extends View {
                       ? "#f9e2af22"
                       : isPaused
                       ? "#cba6f722"
-                      : "#181825"
+                      : hqShade("#181825")
                   )
                   .text_color(
                     isPlaying
@@ -1308,14 +1313,14 @@ export default class CompanyMusic extends View {
                 div()
                   .w_full()
                   .h(6)
-                  .bg("#11111b")
+                  .bg(hqShade("#11111b"))
                   .border_1()
-                  .border_color("#313244")
+                  .border_color(hqShade("#313244"))
                   .overflow_hidden()
                   .child(
                     div()
                       .h_full()
-                      .bg(isPlaying ? "#a6e3a1" : "#585b70")
+                      .bg(isPlaying ? "#a6e3a1" : hqShade("#585b70"))
                       .w(`${Math.max(2, percent)}%`)
                   )
               )
@@ -1350,7 +1355,7 @@ export default class CompanyMusic extends View {
                           div()
                             .w(2)
                             .h(isPlaying ? h : 2)
-                            .bg(isPlaying ? (idx > 7 ? "#f38ba8" : idx > 5 ? "#f9e2af" : "#a6e3a1") : "#313244")
+                            .bg(isPlaying ? (idx > 7 ? "#f38ba8" : idx > 5 ? "#f9e2af" : "#a6e3a1") : hqShade("#313244"))
                         )
                       )
                   )
@@ -1369,7 +1374,7 @@ export default class CompanyMusic extends View {
                     .px(8)
                     .items_center()
                     .cursor_pointer()
-                    .children(box("#45475a", "#313244", "#11111b"))
+                    .children(box(hqShade("#45475a"), hqShade("#313244"), hqShade("#11111b")))
                     .hover((s) => s.text_color("#ffffff"))
                     .tooltip("Previous track / station")
                     .on_click((_e, cx) => this.prev(cx))
@@ -1391,7 +1396,7 @@ export default class CompanyMusic extends View {
                     .px(9)
                     .items_center()
                     .cursor_pointer()
-                    .children(box("#45475a", "#313244", "#11111b"))
+                    .children(box(hqShade("#45475a"), hqShade("#313244"), hqShade("#11111b")))
                     .hover((s) => s.text_color("#ffffff"))
                     .on_click((_e, cx) => this.pause(cx))
                     .child(
@@ -1412,7 +1417,7 @@ export default class CompanyMusic extends View {
                     .px(9)
                     .items_center()
                     .cursor_pointer()
-                    .children(box("#a6e3a1", "#a6e3a122", "#11111b"))
+                    .children(box("#a6e3a1", "#a6e3a122", hqShade("#11111b")))
                     .hover((s) => s.text_color("#ffffff"))
                     .on_click((_e, cx) => this.resume(cx))
                     .child(
@@ -1433,7 +1438,7 @@ export default class CompanyMusic extends View {
                     .px(9)
                     .items_center()
                     .cursor_pointer()
-                    .children(box("#f38ba8", "#f38ba822", "#11111b"))
+                    .children(box("#f38ba8", "#f38ba822", hqShade("#11111b")))
                     .hover((s) => s.text_color("#ffffff"))
                     .on_click((_e, cx) => this.stop(cx))
                     .child(
@@ -1454,7 +1459,7 @@ export default class CompanyMusic extends View {
                     .px(8)
                     .items_center()
                     .cursor_pointer()
-                    .children(box("#45475a", "#313244", "#11111b"))
+                    .children(box(hqShade("#45475a"), hqShade("#313244"), hqShade("#11111b")))
                     .hover((s) => s.text_color("#ffffff"))
                     .tooltip("Next track / station")
                     .on_click((_e, cx) => this.next(cx))
@@ -1493,9 +1498,9 @@ export default class CompanyMusic extends View {
                     .cursor_pointer()
                     .px(5)
                     .py(1)
-                    .bg("#313244")
+                    .bg(hqShade("#313244"))
                     .border_1()
-                    .border_color("#45475a")
+                    .border_color(hqShade("#45475a"))
                     .text_size(9)
                     .font_family(MONO)
                     .font_bold()
@@ -1527,9 +1532,9 @@ export default class CompanyMusic extends View {
                       .gap(7)
                       .items_center()
                       .justify_between()
-                      .bg(active ? "#313244" : "#11111b")
+                      .bg(active ? hqShade("#313244") : hqShade("#11111b"))
                       .border_1()
-                      .border_color(active ? "#89b4fa" : "#313244")
+                      .border_color(active ? "#89b4fa" : hqShade("#313244"))
                       .cursor_pointer()
                       .hover((s) => s.border_color("#89b4fa"))
                       .on_click((_e, cx) => {
@@ -1582,9 +1587,9 @@ export default class CompanyMusic extends View {
                         div()
                           .px(5)
                           .py(1)
-                          .bg(active && isPlaying ? "#a6e3a122" : "#181825")
+                          .bg(active && isPlaying ? "#a6e3a122" : hqShade("#181825"))
                           .border_1()
-                          .border_color(active && isPlaying ? "#a6e3a1" : "#313244")
+                          .border_color(active && isPlaying ? "#a6e3a1" : hqShade("#313244"))
                           .text_size(8.5)
                           .font_family(MONO)
                           .font_bold()
@@ -1625,11 +1630,11 @@ export default class CompanyMusic extends View {
                 .gap(8)
                 .items_center()
                 .justify_between()
-                .bg(active ? "#313244" : "#11111b")
+                .bg(active ? hqShade("#313244") : hqShade("#11111b"))
                 .border_1()
-                .border_color(active ? "#89b4fa" : "#313244")
+                .border_color(active ? "#89b4fa" : hqShade("#313244"))
                 .cursor_pointer()
-                .hover((s) => s.border_color(active ? "#89b4fa" : "#585b70"))
+                .hover((s) => s.border_color(active ? "#89b4fa" : hqShade("#585b70")))
                 .on_click((_e, cx) => this.play(p.url, p.title, cx))
                 .child(
                   h_flex()
@@ -1640,9 +1645,9 @@ export default class CompanyMusic extends View {
                       div()
                         .px(4)
                         .py(1)
-                        .bg(active ? "#89b4fa33" : "#181825")
+                        .bg(active ? "#89b4fa33" : hqShade("#181825"))
                         .border_1()
-                        .border_color(active ? "#89b4fa" : "#45475a")
+                        .border_color(active ? "#89b4fa" : hqShade("#45475a"))
                         .font_family(MONO)
                         .font_bold()
                         .text_size(8.5)
@@ -1657,9 +1662,9 @@ export default class CompanyMusic extends View {
                   div()
                     .px(6)
                     .py(1.5)
-                    .bg(active ? "#89b4fa22" : "#181825")
+                    .bg(active ? "#89b4fa22" : hqShade("#181825"))
                     .border_1()
-                    .border_color(active ? "#89b4fa" : "#313244")
+                    .border_color(active ? "#89b4fa" : hqShade("#313244"))
                     .text_size(8.5)
                     .font_family(MONO)
                     .font_bold()

@@ -1,11 +1,27 @@
 // A pixel-art office at night, seen from the front: a slate wall with two city windows and a server rack in the corner, a filing cabinet and a water cooler,
 // a tiled floor lit by the windows. Everything snaps to a 4px grid and is built from rectangles; lights twinkle with native .loop().
 import { div } from "gpui-kit";
+import { theme } from "herdr";
 
 const U = 4;
 const snap = (v) => Math.round(v / U) * U;
 const r = (x, y, w, h, c) => div().absolute().left(x).top(y).w(w).h(h).bg(c);
 const rnd = (i) => { const v = Math.sin(i * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
+
+// The room's walls, trims and floor take the theme's tint: under a neutral theme (pixel-hq-black)
+// they turn grey at a little under the same lightness; the blue pixel-hq theme keeps them as painted.
+const neutralTheme = () => {
+  const m = /^#(..)(..)(..)/.exec(theme()?.background ?? "");
+  if (!m) return false;
+  const c = m.slice(1).map((h) => parseInt(h, 16));
+  return Math.max(...c) - Math.min(...c) < 8;
+};
+const tone = (hex) => {
+  if (!neutralTheme()) return hex;
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const y = Math.round((0.299 * r + 0.587 * g + 0.114 * b) * 0.75).toString(16).padStart(2, "0");
+  return `#${y}${y}${y}${hex.slice(7)}`;
+};
 
 function ellipse(cx, cy, rx, ry, c) {
   const out = [];
@@ -189,11 +205,11 @@ export function scene(W, H, opts = {}) {
   const L = [];
 
   // Back wall: slate, a lighter band, a dark skirting and a dark line under the ceiling.
-  L.push(r(0, 0, W, yH, "#262a42"), r(0, 0, W, 4, "#161827"), r(0, yH - 32, W, 24, "#2c3150"), r(0, yH - 32, W, 4, "#363c5f"), r(0, base, W, 8, "#171a2c"));
+  L.push(r(0, 0, W, yH, tone("#262a42")), r(0, 0, W, 4, tone("#161827")), r(0, yH - 32, W, 24, tone("#2c3150")), r(0, yH - 32, W, 4, tone("#363c5f")), r(0, base, W, 8, tone("#171a2c")));
 
   // Windows onto the city: the sky of the hour, stars at night, the sun or the moon crossing from the left window to the right.
   for (const wn of wins) {
-    L.push(r(wn.x - 4, wn.y - 4, wn.w + 8, wn.h + 8, "#0c0e1c"), r(wn.x, wn.y, wn.w, wn.h, P.sky));
+    L.push(r(wn.x - 4, wn.y - 4, wn.w + 8, wn.h + 8, tone("#0c0e1c")), r(wn.x, wn.y, wn.w, wn.h, P.sky));
     if (P.stars) for (let i = 0; i < 6; i++) L.push(r(wn.x + 6 + (i % 4) * snap(wn.w / 4), wn.y + 6 + snap(rnd(i + wn.seed) * wn.h * 0.3), U, U, "#f5e9b0").loop("opacity", { from: 0.2, to: 0.9, period: 1500 + i * 400, easing: "ease-in-out" }));
   }
   {
@@ -227,7 +243,7 @@ export function scene(W, H, opts = {}) {
   }
   for (const wn of wins) {
     for (const f of [0.16, 0.5, 0.84]) for (let s = 0; s < wn.h / 4; s++) { const gx = wn.x + f * wn.w - s * 3; if (gx > wn.x + 2 && gx + 8 < wn.x + wn.w - 2) L.push(r(gx, wn.y + s * 4, 8, 4, "#ffffff0d")); }
-    L.push(r(wn.x + wn.w / 2 - 2, wn.y, 4, wn.h, "#0c0e1c"), r(wn.x, wn.y + wn.h / 2 - 2, wn.w, 4, "#0c0e1c"), r(wn.x - 8, wn.y + wn.h + 4, wn.w + 16, 5, "#7e86ad"));
+    L.push(r(wn.x + wn.w / 2 - 2, wn.y, 4, wn.h, tone("#0c0e1c")), r(wn.x, wn.y + wn.h / 2 - 2, wn.w, 4, tone("#0c0e1c")), r(wn.x - 8, wn.y + wn.h + 4, wn.w + 16, 5, "#7e86ad"));
   }
 
   // The clock between the windows shows the time: an hour and a minute hand drawn in 2px steps.
@@ -301,11 +317,11 @@ export function scene(W, H, opts = {}) {
   L.push(...ledWall(Lo.rackX, Lo.rackW, base, Boolean(opts.music), Math.max(0, opts.load ?? 0)));
 
   // Tiled floor: a dark base with a grid of 24px tiles, and a pool of window light under each window.
-  L.push(r(0, yH, W, H - yH, "#242843"));
-  for (let x = 0; x < W; x += 24) L.push(r(x, yH, 2, H - yH, "#1c1f36"));
-  for (let y = yH + 4; y < H; y += 24) L.push(r(0, y, W, 2, "#1c1f36"));
+  L.push(r(0, yH, W, H - yH, tone("#242843")));
+  for (let x = 0; x < W; x += 24) L.push(r(x, yH, 2, H - yH, tone("#1c1f36")));
+  for (let y = yH + 4; y < H; y += 24) L.push(r(0, y, W, 2, tone("#1c1f36")));
   for (const wn of wins) for (let i = 0; i < 9; i++) L.push(r(wn.x + i * 6, yH + 8 + i * 8, Math.round(wn.w * 0.85), 8, P.pool));
-  L.push(r(0, yH, 4, H - yH, "#0d0f1a"), r(W - 4, yH, 4, H - yH, "#0d0f1a"), r(0, H - 4, W, 4, "#0d0f1a"));
+  L.push(r(0, yH, 4, H - yH, tone("#0d0f1a")), r(W - 4, yH, 4, H - yH, tone("#0d0f1a")), r(0, H - 4, W, 4, tone("#0d0f1a")));
 
   return div().absolute().left(0).top(0).w(W).h(H).overflow_hidden().children(L);
 }

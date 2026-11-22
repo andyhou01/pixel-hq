@@ -49,7 +49,7 @@
 - **Thanh trạng thái kiểu pixel.** Các nút MusicBox, Switcher, Hotkeys và bảng lệnh là nút pixel. Bấm chuột phải vào nút MusicBox để ẩn nó khỏi thanh; mở MusicBox nhanh bằng `Ctrl+Shift+M`.
 - **Thanh trạng thái của team.** "Pixel HQ", team có bao nhiêu agent, và bao nhiêu agent đang gõ, đang chờ bạn, đã ship hoặc đang nghỉ giải lao.
 - **Biển hiệu công ty.** Logo chú corgi của Pixel HQ cùng dòng "Pixel HQ / engineering floor" ở đầu sidebar.
-- **Bảng màu Catppuccin Mocha** với điểm nhấn xanh dương dịu, đi kèm một theme terminal cùng tông.
+- **Hai theme, mặc định là màu đen.** `pixel-hq-black` tô cửa sổ màu đen với điểm nhấn xanh dương dịu; `pixel-hq` là giao diện Catppuccin Mocha gốc với các panel xanh xám đậm. Đổi trong Settings > Look, hoặc `herdr-app do app.theme --name pixel-hq` (và `--name pixel-hq-black` để quay lại).
 
 ## Đội ngũ
 
@@ -101,14 +101,14 @@ Nhờ agent của bạn:
 > Read ~/.config/herdr-app/AGENTS.md, then add this layout: herdr.dev/layouts/bnhan2710/pixel-hq
 
 Hoặc làm tay: chép `layouts/`, `mods/` và `themes/` vào `~/.config/herdr-app/`, thoát rồi mở lại Herdr một lần,
-sau đó chọn **pixel-hq** trong Settings > Look. Layout tự mang theme **pixel-hq**, luôn tối kể cả khi hệ thống đang ở chế độ sáng.
+sau đó chọn **pixel-hq** trong Settings > Look. Layout mang hai theme, **pixel-hq-black** (mặc định) và **pixel-hq** Catppuccin, cả hai luôn tối kể cả khi hệ thống đang ở chế độ sáng.
 
 Mod là code được tin cậy và Herdr không chạy chúng trong sandbox. Repo này có khoảng 4.200 dòng JavaScript. Các chương trình duy nhất nó chạy là các công cụ cục bộ
 (`mkdir`, `cp`, `open`, `git` để xem mỗi bàn đã sửa gì và tạo worktree khi bạn thuê staff, và Chrome/ImageMagick khi bạn chuyển đổi ảnh động trong trình chỉnh figures). Điều duy nhất nó ghi ra ngoài thư mục của mình là plugin trạng thái OpenCode ở mục bên dưới (chỉ khi máy có OpenCode, một lần, không ghi đè). Nó chỉ kết nối tới GitHub: phần kiểm tra cập nhật đọc một file công khai rất nhỏ, còn khi bạn bấm **Update now** thì nó tải các file của repo này (xem "Cập nhật"). Nó không gửi gì về bạn. Hãy đọc code trước khi cài.
 
 ## Cập nhật
 
-Herdr cài layout chia sẻ dưới dạng bản sao thường, nên nó không tự cập nhật. Khi có phiên bản mới, Pixel HQ hiện nút **Update now** trong văn phòng. Nút này mở một cửa sổ nhỏ, tải thẳng từ GitHub các file mới nhất trên nhánh `main` của repo này (danh sách file lấy từ GitHub API, nếu lỗi thì dùng danh sách có sẵn), hiện tiến độ, rồi chỉ ghi đè những file Pixel HQ đã thay đổi trong bản cài: `layouts/pixel-hq.json`, `themes/pixel-hq.json` và các mod `company-*`. Không cần agent nào. Nó luôn cài bản mới nhất, kể cả khi bạn đã bỏ qua vài bản. Nếu tải lỗi, cửa sổ có nút **Retry Auto-Update** hoặc **Use Agent Tab**: nút sau mở tab mới với một agent (agent bạn đang dùng, nếu không thì Claude) chạy câu lệnh bên dưới. Bạn cũng có thể tự nhờ một agent bất kỳ:
+Herdr cài layout chia sẻ dưới dạng bản sao thường, nên nó không tự cập nhật. Khi có phiên bản mới, Pixel HQ hiện nút **Update now** trong văn phòng. Nút này mở một cửa sổ nhỏ, tải thẳng từ GitHub các file mới nhất trên nhánh `main` của repo này (danh sách file lấy từ GitHub API, nếu lỗi thì dùng danh sách có sẵn), hiện tiến độ, rồi chỉ ghi đè những file Pixel HQ đã thay đổi trong bản cài: `layouts/pixel-hq.json`, `themes/pixel-hq.json`, `themes/pixel-hq-black.json` và các mod `company-*`. Không cần agent nào. Nó luôn cài bản mới nhất, kể cả khi bạn đã bỏ qua vài bản. Nếu tải lỗi, cửa sổ có nút **Retry Auto-Update** hoặc **Use Agent Tab**: nút sau mở tab mới với một agent (agent bạn đang dùng, nếu không thì Claude) chạy câu lệnh bên dưới. Bạn cũng có thể tự nhờ một agent bất kỳ:
 
 > Read ~/.config/herdr-app/AGENTS.md, then update my Pixel HQ layout to the latest version from herdr.dev/layouts/bnhan2710/pixel-hq. Overwriting my installed pixel-hq files is intended; keep my other layouts and mods.
 

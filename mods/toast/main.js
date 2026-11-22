@@ -5,6 +5,11 @@ import { View, div, image } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { props, closeOverlay, run, theme } from "herdr";
 
+// Pixel HQ's dark greys follow the theme (themes/pixel-hq.json, themes/pixel-hq-black.json):
+// each Catppuccin shade maps to a theme colour, and keeps its alpha.
+const HQ_SHADE = { "#11111b": "canvas", "#0f111a": "canvas", "#181825": "chrome", "#1e1e2e": "background", "#262637": "surface", "#313244": "raised", "#45475a": "ansi0", "#585b70": "ansi8" };
+const hqShade = (hex) => { const c = theme()?.[HQ_SHADE[hex.slice(0, 7)]]; return typeof c === "string" && c.startsWith("#") ? c.slice(0, 7) + hex.slice(7) : hex; };
+
 const MONO = "JetBrains Mono, Menlo, monospace";
 
 const notch = (c, [l, r, t, b]) => [
@@ -36,7 +41,7 @@ export default class Toast extends View {
       .id("toast")
       .size_full()
       .relative()
-      .children(box("#45475a", "#181825", "#11111b"))
+      .children(box(hqShade("#45475a"), hqShade("#181825"), hqShade("#11111b")))
       .cursor_pointer()
       .hover((s) => s.opacity(0.96))
       .on_click(() => {
@@ -121,7 +126,7 @@ export default class Toast extends View {
                         .h(22)
                         .px(6)
                         .items_center()
-                        .children(box("#45475a", "#313244", "#11111b"))
+                        .children(box(hqShade("#45475a"), hqShade("#313244"), hqShade("#11111b")))
                         .cursor_pointer()
                         .hover((s) => s.text_color("#ffffff"))
                         .on_click((_e, cx) => {

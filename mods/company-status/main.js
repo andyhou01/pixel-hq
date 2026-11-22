@@ -2,6 +2,11 @@ import { View, div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { spaces, panes, focused, agents, theme, run, window, keys, setBadge, openOverlay, shared, setShared, appHome, exec, checking, settings, readTextFile, writeTextFile } from "herdr";
 
+// Pixel HQ's dark greys follow the theme (themes/pixel-hq.json, themes/pixel-hq-black.json):
+// each Catppuccin shade maps to a theme colour, and keeps its alpha.
+const HQ_SHADE = { "#11111b": "canvas", "#0f111a": "canvas", "#181825": "chrome", "#1e1e2e": "background", "#262637": "surface", "#313244": "raised", "#45475a": "ansi0", "#585b70": "ansi8" };
+const hqShade = (hex) => { const c = theme()?.[HQ_SHADE[hex.slice(0, 7)]]; return typeof c === "string" && c.startsWith("#") ? c.slice(0, 7) + hex.slice(7) : hex; };
+
 const MONO = "JetBrains Mono, Menlo, monospace";
 
 async function ensureMusicHotkey(cx) {
@@ -261,7 +266,7 @@ export default class WorkspaceStatus extends View {
                 
                 .max_w(170)
                 .cursor_pointer()
-                .bg("#313244")
+                .bg(hqShade("#313244"))
                 .text_color("#f9e2af")
                 .tooltip(setup.msg || "Installing audio engine... · Click to view")
                 .on_click(() => run("mod.open", { name: "company-music" }))
@@ -294,9 +299,9 @@ export default class WorkspaceStatus extends View {
                 .px(5)
                 .py(2)
                 
-                .bg("#181825")
+                .bg(hqShade("#181825"))
                 .border_1()
-                .border_color("#313244")
+                .border_color(hqShade("#313244"))
                 .on_mouse_down("right", (_e, cx) => {
                   cx.stop_propagation();
                   hideMusicBox(cx);

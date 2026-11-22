@@ -11,8 +11,9 @@ one build of it. If they don't work on your Herdr, or you want it different, bui
 
 ## What you see
 
-The Herdr window in a Catppuccin Mocha palette: dark blue-gray panels, light text, a soft blue `#89b4fa`
-as the one accent. Panels are rounded (14px) with a faint white 1px border. A sidebar on the left,
+The Herdr window in a black palette (theme `pixel-hq-black`): near-black panels, light grey text, a soft blue `#89b4fa`
+as the one accent. The original Catppuccin Mocha look (dark blue-gray panels) is the theme `pixel-hq`, one pick away
+in Settings › Look. Panels are rounded (14px) with a faint white 1px border. A sidebar on the left,
 tabs and terminals on the right, a status bar at the bottom.
 
 - **Brand block** (top of the sidebar, 46px): the Pixel HQ logo (`mods/company-brand/logo.png`, a pixel-art corgi at a laptop in a rounded purple frame, 34px, transparent corners), "Pixel HQ"
@@ -144,16 +145,27 @@ Each floor card is 66px: the night-office tile (54x40, as above) inside a notche
 
 ## Built from
 
-- **The layout** (`layouts/pixel-hq.json`): a root `row` with `theme: "pixel-hq"`, `padding: 8`, `gap: 8`, `background: #11111b`,
-  `titlebar: "none"`, `traffic_lights: [12, 16]` and these `colors`: accent `#89b4fa`, chrome `#181825`,
-  canvas `#11111b`, background `#1e1e2e`, surface `#262637`, raised `#313244`, border `#ffffff14`.
+- **The layout** (`layouts/pixel-hq.json`): a root `row` with `theme: "pixel-hq-black"`, `padding: 8`, `gap: 8`, `background: canvas`,
+  `titlebar: "none"`, `traffic_lights: [12, 16]`. It names theme colours only (`canvas`, `chrome`, `background`, `raised`, `accent`)
+  and sets no `colors` of its own, so the theme picker restyles the whole window.
   Children: a `sidebar` column (brand block 46px, spaces block, agents block, footer block) and a `work`
   column (tabs block 42px, the terminals block `{ tab: "active", pane: { … } }`, a files/changes panel, status block 28px).
-  The pane frame: radius 14, gap 8, background `#1e1e2e`, 1px border, focus border `#89b4fa`,
+  The sidebar, tabs and status blocks are `chrome` with a 1px `raised` border.
+  The pane frame: radius 14, gap 8, background `background`, 1px `raised` border, focus border `accent`,
   header `{ mod: "company-pane", height: 40 }`.
-- **Theme** (`themes/pixel-hq.json`): background `#1e1e2e`, foreground `#cdd6f4`, cursor `#89b4fa`, the Catppuccin Mocha 16-color ANSI set.
-  The layout names it as a single theme, not a `{light, dark}` pair: its panels are painted dark, so with the system (or `appearance`)
-  in light mode a light theme would put dark text on them.
+- **Themes**, both dark and named as a single theme, not a `{light, dark}` pair: the panels are painted dark, so with the system
+  (or `appearance`) in light mode a light theme would put dark text on them.
+  - `themes/pixel-hq-black.json` (the default): background `#0c0c0c`, foreground `#d4d4d4`, cursor `#89b4fa`, selection `#3a3a3a`,
+    `colors` canvas `#000000`, chrome `#080808`, surface `#141414`, raised `#222222`, popover `#111111`, accent `#89b4fa`,
+    border `#ffffff14`, hover `#ffffff10`, selected `#ffffff14`; the Catppuccin accent hues with grey ansi0 `#333333`, ansi7 `#c8c8c8`,
+    ansi8 `#5a5a5a`, ansi15 `#ececec`.
+  - `themes/pixel-hq.json` (Catppuccin Mocha): background `#1e1e2e`, foreground `#cdd6f4`, cursor `#89b4fa`, the Catppuccin Mocha
+    16-color ANSI set, `colors` canvas `#11111b`, chrome `#181825`, surface `#262637`, raised `#313244`, accent `#89b4fa`,
+    border `#ffffff14`, hover `#ffffff10`, selected `#ffffff14`.
+  - The mods draw their dark greys through `hqShade("#…")`, which maps each Catppuccin shade to a theme colour and keeps its alpha
+    (`#11111b` and `#0f111a` canvas, `#181825` chrome, `#1e1e2e` background, `#262637` surface, `#313244` raised, `#45475a` ansi0,
+    `#585b70` ansi8), so `pixel-hq` shows exactly the original colours. The office scene's walls, trims and floor go through
+    `tone()` in `scene.js`: under a neutral theme (no tint in its background) they turn grey at 75% of their lightness.
 - **`mods/company-brand/`**: the shipped `workspace-chrome` header with the logo tile and two-line name. Its search and sidebar-toggle
   icons (`search.svg`, `sidebar.svg`) are copies of `workspace-chrome`'s, so the mod does not depend on another mod's files.
 - **`mods/company-pane/`**: a pane header. Reads `panes()` for its terminal; draws the pet with `duckMood`

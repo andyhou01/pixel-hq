@@ -5,6 +5,11 @@ import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { spaces, agents, run, theme, props, closeOverlay, nextCommand } from "herdr";
 
+// Pixel HQ's dark greys follow the theme (themes/pixel-hq.json, themes/pixel-hq-black.json):
+// each Catppuccin shade maps to a theme colour, and keeps its alpha.
+const HQ_SHADE = { "#11111b": "canvas", "#0f111a": "canvas", "#181825": "chrome", "#1e1e2e": "background", "#262637": "surface", "#313244": "raised", "#45475a": "ansi0", "#585b70": "ansi8" };
+const hqShade = (hex) => { const c = theme()?.[HQ_SHADE[hex.slice(0, 7)]]; return typeof c === "string" && c.startsWith("#") ? c.slice(0, 7) + hex.slice(7) : hex; };
+
 const MONO = "JetBrains Mono, Menlo, monospace";
 
 const notch = (c, [l, r, t, b]) => [
@@ -165,7 +170,7 @@ export default class CompanySwitcher extends View {
       .size_full()
       .min_h(0)
       .relative()
-      .children(box("#45475a", "#181825", "#11111b"))
+      .children(box(hqShade("#45475a"), hqShade("#181825"), hqShade("#11111b")))
       .child(
         v_flex()
           .relative()
@@ -180,7 +185,7 @@ export default class CompanySwitcher extends View {
               .items_center()
               .justify_between()
               .border_b(1)
-              .border_color("#313244")
+              .border_color(hqShade("#313244"))
               .child(
                 h_flex()
                   .gap(8)
@@ -217,7 +222,7 @@ export default class CompanySwitcher extends View {
                   .items_center()
                   .justify_center()
                   .cursor_pointer()
-                  .children(box("#45475a", "#313244", "#11111b"))
+                  .children(box(hqShade("#45475a"), hqShade("#313244"), hqShade("#11111b")))
                   .hover((s) => s.text_color("#ffffff"))
                   .on_click(() => closeOverlay(props()?.overlay))
                   .child(
@@ -239,7 +244,7 @@ export default class CompanySwitcher extends View {
               .items_center()
               .bg("#0d0e15")
               .border_1()
-              .border_color("#313244")
+              .border_color(hqShade("#313244"))
               .child(div().font_family(MONO).font_bold().text_size(13).text_color("#89b4fa").child(">"))
               .child(
                 Input.new(this.input)
@@ -273,9 +278,9 @@ export default class CompanySwitcher extends View {
                     .items_center()
                     .justify_between()
                     .cursor_pointer()
-                    .bg(isSel ? "#2a2b3d" : on ? "#1e1e2e" : "#14141e")
+                    .bg(isSel ? "#2a2b3d" : on ? hqShade("#1e1e2e") : "#14141e")
                     .border_1()
-                    .border_color(isSel ? "#89b4fa" : on ? "#45475a" : "#262637")
+                    .border_color(isSel ? "#89b4fa" : on ? hqShade("#45475a") : hqShade("#262637"))
                     .hover((st) => st.bg("#2e3146"))
                     .on_click(() => {
                       run("space.select", { id: s.id });
@@ -291,9 +296,9 @@ export default class CompanySwitcher extends View {
                           div()
                             .px(5)
                             .py(1.5)
-                            .bg("#11111b")
+                            .bg(hqShade("#11111b"))
                             .border_1()
-                            .border_color(isSel ? "#89b4fa" : "#45475a")
+                            .border_color(isSel ? "#89b4fa" : hqShade("#45475a"))
                             .font_family(MONO)
                             .text_size(9.5)
                             .font_bold()
@@ -363,9 +368,9 @@ export default class CompanySwitcher extends View {
                           div()
                             .px(5)
                             .py(1.5)
-                            .bg("#11111b")
+                            .bg(hqShade("#11111b"))
                             .border_1()
-                            .border_color("#45475a")
+                            .border_color(hqShade("#45475a"))
                             .text_size(9)
                             .font_family(MONO)
                             .font_bold()
@@ -383,7 +388,7 @@ export default class CompanySwitcher extends View {
               .items_center()
               .justify_between()
               .border_t(1)
-              .border_color("#313244")
+              .border_color(hqShade("#313244"))
               .font_family(MONO)
               .text_size(9)
               .text_color("#6c7086")

@@ -12,6 +12,11 @@ import { checkPixelHqUpdate, executePixelHqUpdate } from "./updater.js";
 import { snapshot, clashes, hire, agentTaskArgv } from "./crew.js";
 import { FLOOR_PLANS, planOf, floorTeams, planRows, planSpots, cubicleSpot } from "./floorplan.js";
 
+// Pixel HQ's dark greys follow the theme (themes/pixel-hq.json, themes/pixel-hq-black.json):
+// each Catppuccin shade maps to a theme colour, and keeps its alpha.
+const HQ_SHADE = { "#11111b": "canvas", "#0f111a": "canvas", "#181825": "chrome", "#1e1e2e": "background", "#262637": "surface", "#313244": "raised", "#45475a": "ansi0", "#585b70": "ansi8" };
+const hqShade = (hex) => { const c = theme()?.[HQ_SHADE[hex.slice(0, 7)]]; return typeof c === "string" && c.startsWith("#") ? c.slice(0, 7) + hex.slice(7) : hex; };
+
 // The plan each floor (space) uses: { [space id]: { plan, at } }; `at` marks a fresh pick,
 // which clears the desks dragged on that floor.
 const FLOOR_KEY = "pixel-hq.floor-plans";
@@ -571,18 +576,18 @@ export default class Agents extends View {
       const spots = layout ? planSpots(layout) : new Map(["lead", "a", "b", "c", "d"].map((a, i) => [a, cubicleSpot(i, 2, 3)]));
       // Desks shrink to keep a gap when a plan has many rows (stand-up).
       const tall = Math.min(5, Math.floor((H - 6) / (layout?.rows.length ?? 3)) - 1);
-      return div().relative().w(W).h(H).flex_none().bg("#11111b").border_1().border_color(sel ? t.accent : "#313244")
+      return div().relative().w(W).h(H).flex_none().bg(hqShade("#11111b")).border_1().border_color(sel ? t.accent : hqShade("#313244"))
         .children([...spots].map(([a, [x, y]]) => {
           const lead = a === "lead" && plan.lead;
           const w = lead ? 11 : 8, h = lead ? tall + 1 : tall;
           return div().absolute().left(Math.round(4 + x * (W - 8) - w / 2)).top(Math.round(3 + y * (H - 6 - h))).w(w).h(h)
-            .bg(lead ? t.accent : sel ? "#a6adc8" : "#585b70");
+            .bg(lead ? t.accent : sel ? "#a6adc8" : hqShade("#585b70"));
         }));
     };
     return div()
       .relative()
       .w(260)
-      .children(box("#45475a", "#181825", "#11111b"))
+      .children(box(hqShade("#45475a"), hqShade("#181825"), hqShade("#11111b")))
       .child(
         v_flex()
           .relative()
@@ -590,10 +595,10 @@ export default class Agents extends View {
           .font_family("JetBrains Mono")
           .text_size(11)
           .child(
-            h_flex().px(6).pt(2).pb(4).border_b(1).border_color("#313244").justify_between().items_center()
+            h_flex().px(6).pt(2).pb(4).border_b(1).border_color(hqShade("#313244")).justify_between().items_center()
               .child(div().font_bold().text_size(10).text_color(t.dim).child("FLOOR PLAN"))
               .child(h_flex().id("floor-esc").relative().h(20).px(6).items_center().justify_center().cursor_pointer()
-                .children(box("#45475a", "#313244", "#11111b"))
+                .children(box(hqShade("#45475a"), hqShade("#313244"), hqShade("#11111b")))
                 .hover((s) => s.text_color("#ffffff"))
                 .on_click(() => closeOverlay(props().overlay))
                 .child(div().font_family("JetBrains Mono").text_size(8.5).font_bold().text_color("#a6adc8").child("ESC"))),
@@ -604,8 +609,8 @@ export default class Agents extends View {
                 const sel = p.id === on;
                 return h_flex().id(`floor-${p.id}`).h(36).px(6).gap(8).items_center().cursor_pointer()
                   .text_color(t.foreground)
-                  .when(sel, (el) => el.bg("#313244"))
-                  .hover((el) => el.bg("#313244"))
+                  .when(sel, (el) => el.bg(hqShade("#313244")))
+                  .hover((el) => el.bg(hqShade("#313244")))
                   .on_click(() => {
                     setShared(FLOOR_KEY, { ...(shared(FLOOR_KEY) ?? {}), [space]: { plan: p.id, at: Date.now() } });
                     closeOverlay(props().overlay);
@@ -626,7 +631,7 @@ export default class Agents extends View {
     return div()
       .relative()
       .w(200)
-      .children(box("#45475a", "#181825", "#11111b"))
+      .children(box(hqShade("#45475a"), hqShade("#181825"), hqShade("#11111b")))
       .child(
         v_flex()
           .relative()
@@ -639,7 +644,7 @@ export default class Agents extends View {
               .pt(2)
               .pb(4)
               .border_b(1)
-              .border_color("#313244")
+              .border_color(hqShade("#313244"))
               .justify_between()
               .items_center()
               .child(div().font_bold().text_size(10).text_color(t.dim).child("SORT AGENTS"))
@@ -651,7 +656,7 @@ export default class Agents extends View {
                   .items_center()
                   .justify_center()
                   .cursor_pointer()
-                  .children(box("#45475a", "#313244", "#11111b"))
+                  .children(box(hqShade("#45475a"), hqShade("#313244"), hqShade("#11111b")))
                   .hover((s) => s.text_color("#ffffff"))
                   .on_click(() => closeOverlay(props().overlay))
                   .child(div().font_family("JetBrains Mono").text_size(8.5).font_bold().text_color("#a6adc8").child("ESC"))
@@ -671,7 +676,7 @@ export default class Agents extends View {
                     .items_center()
                     .cursor_pointer()
                     .text_color(t.foreground)
-                    .hover((el) => el.bg("#313244"))
+                    .hover((el) => el.bg(hqShade("#313244")))
                     .on_click(() => {
                       setShared("agents.sort", s.id);
                       closeOverlay(props().overlay);
@@ -716,7 +721,7 @@ export default class Agents extends View {
       .relative()
       .w(340)
       .h(h)
-      .children(box("#45475a", "#181825", "#11111b"))
+      .children(box(hqShade("#45475a"), hqShade("#181825"), hqShade("#11111b")))
       .child(
         v_flex()
           .relative()
@@ -730,7 +735,7 @@ export default class Agents extends View {
               .px(6)
               .pb(4)
               .border_b(1)
-              .border_color("#313244")
+              .border_color(hqShade("#313244"))
               .items_center()
               .justify_between()
               .child(
@@ -746,7 +751,7 @@ export default class Agents extends View {
                   .items_center()
                   .justify_center()
                   .cursor_pointer()
-                  .children(box("#45475a", "#313244", "#11111b"))
+                  .children(box(hqShade("#45475a"), hqShade("#313244"), hqShade("#11111b")))
                   .hover((s) => s.text_color("#ffffff"))
                   .on_click(() => closeOverlay(props()?.overlay))
                   .child(div().text_size(9).font_bold().text_color("#a6adc8").child("ESC"))
@@ -771,8 +776,8 @@ export default class Agents extends View {
                   .gap(8)
                   .items_center()
                   .cursor_pointer()
-                  .children(box("#313244", "#1e1e2e", "#11111b"))
-                  .hover((s) => s.bg("#313244"))
+                  .children(box(hqShade("#313244"), hqShade("#1e1e2e"), hqShade("#11111b")))
+                  .hover((s) => s.bg(hqShade("#313244")))
                   .on_click(() => {
                     run("pane.focus", { pane: a.pane });
                     closeOverlay(props()?.overlay);
@@ -832,9 +837,9 @@ export default class Agents extends View {
   nameplate(a, { text, hinted, cl, clText, lit, hot, isUrge, isSnooze, width, font }) {
     const clash = cl ? (cl.kind === "file" ? "#ff5370" : "#f9b84a") : null;
     const alert = hinted ? "#cba6f7" : clash;
-    const light = alert ?? (hot ? "#f38ba8" : a.status === "done" ? "#a6e3a1" : a.status === "working" ? "#89b4fa" : isUrge ? "#fab387" : isSnooze ? "#585b70" : "#7f849c");
-    const frame = alert ?? (hot ? "#f38ba8" : lit ? "#f9e2af" : isUrge ? "#fab387" : "#45475a");
-    const fill = hot ? "#2b1d29" : lit ? "#262433" : "#181825";
+    const light = alert ?? (hot ? "#f38ba8" : a.status === "done" ? "#a6e3a1" : a.status === "working" ? "#89b4fa" : isUrge ? "#fab387" : isSnooze ? hqShade("#585b70") : "#7f849c");
+    const frame = alert ?? (hot ? "#f38ba8" : lit ? "#f9e2af" : isUrge ? "#fab387" : hqShade("#45475a"));
+    const fill = hot ? "#2b1d29" : lit ? "#262433" : hqShade("#181825");
     const blink = hot || a.status === "working" ? { from: 0.3, to: 1, period: hot ? 420 : 900, easing: "ease-in-out" } : null;
     // Never wider than the desk: a long name ends in "…" and hovering the plate shows all of it.
     // Narrow (sub-agent) desks get a tighter plate so a short name like "worker1" still fits.
@@ -843,7 +848,7 @@ export default class Agents extends View {
     const dot = (el) => el.relative().size(tight ? 4 : 5).flex_none().bg(light);
     return h_flex().id(`plate-${a.address}`).relative().mt(4).max_w(width).h(tight ? 16 : 17).pl(tight ? 4 : 6).pr(tight ? 5 : 7).gap(tight ? 3 : 4).items_center()
       .tooltip(String(full ?? ""))
-      .children(box(frame, fill, "#11111b"))
+      .children(box(frame, fill, hqShade("#11111b")))
       .child(blink ? dot(div()).loop("opacity", blink) : dot(div()))
       .child(div().relative().min_w(0).truncate().font_family(font).font_bold().text_size(tight ? 9 : 9.5)
         .text_color(alert ?? (isSnooze ? "#a6adc8" : "#cdd6f4")).child(full));
@@ -1150,7 +1155,7 @@ export default class Agents extends View {
       .relative()
       .w(340)
       .h(h)
-      .children(box("#45475a", "#181825", "#11111b"))
+      .children(box(hqShade("#45475a"), hqShade("#181825"), hqShade("#11111b")))
       .child(
         v_flex()
           .relative()
@@ -1164,7 +1169,7 @@ export default class Agents extends View {
               .px(6)
               .pb(4)
               .border_b(1)
-              .border_color("#313244")
+              .border_color(hqShade("#313244"))
               .items_center()
               .justify_between()
               .child(
@@ -1180,7 +1185,7 @@ export default class Agents extends View {
                   .items_center()
                   .justify_center()
                   .cursor_pointer()
-                  .children(box("#45475a", "#313244", "#11111b"))
+                  .children(box(hqShade("#45475a"), hqShade("#313244"), hqShade("#11111b")))
                   .hover((s) => s.text_color("#ffffff"))
                   .on_click(() => closeOverlay(props()?.overlay))
                   .child(div().text_size(9).font_bold().text_color("#a6adc8").child("ESC"))
@@ -1196,8 +1201,8 @@ export default class Agents extends View {
               .children(rows.map(({ a, x }) => {
                 const parts = [x.interns.length ? plural(x.interns.length, "sub-agent") : null, x.jobs ? `${plural(x.jobs, "shell job")}${x.long ? ` (${x.long} over a minute)` : ""}` : null].filter(Boolean).join(" · ");
                 return h_flex().id(`wl-${a.address}`).relative().h(52).px(6).gap(8).items_center().cursor_pointer()
-                  .children(box("#313244", "#1e1e2e", "#11111b"))
-                  .hover((st) => st.bg("#313244"))
+                  .children(box(hqShade("#313244"), hqShade("#1e1e2e"), hqShade("#11111b")))
+                  .hover((st) => st.bg(hqShade("#313244")))
                   .on_click(() => { run("agent.focus", { terminal: a.address }); closeOverlay(props().overlay); })
                   .child(div().flex_none().child(figureFor(a.space_name, a.status, 34, 0, speciesOf(progOf(a)))))
                   .child(v_flex().flex_1().min_w(0).gap(1)
@@ -1224,7 +1229,7 @@ export default class Agents extends View {
     return div()
       .relative()
       .w(300)
-      .children(box("#45475a", "#181825", "#11111b"))
+      .children(box(hqShade("#45475a"), hqShade("#181825"), hqShade("#11111b")))
       .child(
         v_flex()
           .relative()
@@ -1237,7 +1242,7 @@ export default class Agents extends View {
               .px(6)
               .pb(4)
               .border_b(1)
-              .border_color("#313244")
+              .border_color(hqShade("#313244"))
               .items_center()
               .justify_between()
               .child(
@@ -1253,7 +1258,7 @@ export default class Agents extends View {
                   .items_center()
                   .justify_center()
                   .cursor_pointer()
-                  .children(box("#45475a", "#313244", "#11111b"))
+                  .children(box(hqShade("#45475a"), hqShade("#313244"), hqShade("#11111b")))
                   .hover((s) => s.text_color("#ffffff"))
                   .on_click(() => closeOverlay(props()?.overlay))
                   .child(div().text_size(9).font_bold().text_color("#a6adc8").child("ESC"))
@@ -2048,7 +2053,7 @@ export default class Agents extends View {
           };
           return el.children(Array.from({ length: shown }, (_, i) => bot(i)))
             .when(extra > 0, (e2) => e2.child(div().absolute().left(x1 + ru(4)).top(floor + ru(3)).px(2).rounded(3)
-              .bg("#0f111acc").text_size(Math.max(8, kk(9))).text_color("#cdd6f4").child(`+${extra}`)));
+              .bg(hqShade("#0f111acc")).text_size(Math.max(8, kk(9))).text_color("#cdd6f4").child(`+${extra}`)));
         })
         // Interns in front of the desk, one tiny pet per running sub-agent (three at most, then "+N").
         .when(act.interns.length > 0, (el) => {
@@ -2057,7 +2062,7 @@ export default class Agents extends View {
           return el
             .children(shown.map((it, j) => div().absolute().left(kk(2) + j * step).top(top).child(duckMood(mood(it.status, 0), ih, { species: it.species }))))
             .when(extra > 0, (e2) => e2.child(div().absolute().left(kk(2) + shown.length * step + Math.round(iw * 0.45)).top(top + Math.round(ih * 0.3)).px(3).rounded(3)
-              .bg("#0f111acc").text_size(Math.max(8, kk(9))).text_color("#cdd6f4").child(`+${extra}`)));
+              .bg(hqShade("#0f111acc")).text_size(Math.max(8, kk(9))).text_color("#cdd6f4").child(`+${extra}`)));
         })
         // Papers pile up on the desk as the agent's context fills: one sheet per 10%, the top ones turn pink past 80%.
         .when(Boolean(ctxPct != null && ctxPct >= 5), (el) => {
@@ -2198,17 +2203,17 @@ export default class Agents extends View {
             })
         );
       })
-      .when(list.length === 0 && settledFloor === 0, (el) => el.child(div().absolute().left(12).top(sz.height * 0.5).w(sz.width - 24).px(8).py(6).bg("#0f111acc").border_1().border_color("#313244").text_size(12).text_color("#ffffff").child("No staff on this floor yet. Hire one with the + above, or start an agent in this space.")))
-      .when(list.length === 0 && settledFloor > 0, (el) => el.child(div().absolute().left(12).top(sz.height * 0.5).w(sz.width - 24).px(8).py(6).bg("#0f111acc").border_1().border_color("#313244").text_size(12).text_color("#a6e3a1").child("Everyone shipped has clocked out. Click the ✓ settled chip in the corner to bring them back.")))
-      .when(hidden > 0, (el) => el.child(div().absolute().right(8).top(horizon + 6).px(8).py(3).bg("#11111bdd").border_1().border_color("#45475a").text_size(11).text_color("#cdd6f4").child(`+${hidden} more · narrow the panel to list all`)))
+      .when(list.length === 0 && settledFloor === 0, (el) => el.child(div().absolute().left(12).top(sz.height * 0.5).w(sz.width - 24).px(8).py(6).bg(hqShade("#0f111acc")).border_1().border_color(hqShade("#313244")).text_size(12).text_color("#ffffff").child("No staff on this floor yet. Hire one with the + above, or start an agent in this space.")))
+      .when(list.length === 0 && settledFloor > 0, (el) => el.child(div().absolute().left(12).top(sz.height * 0.5).w(sz.width - 24).px(8).py(6).bg(hqShade("#0f111acc")).border_1().border_color(hqShade("#313244")).text_size(12).text_color("#a6e3a1").child("Everyone shipped has clocked out. Click the ✓ settled chip in the corner to bring them back.")))
+      .when(hidden > 0, (el) => el.child(div().absolute().right(8).top(horizon + 6).px(8).py(3).bg(hqShade("#11111bdd")).border_1().border_color(hqShade("#45475a")).text_size(11).text_color("#cdd6f4").child(`+${hidden} more · narrow the panel to list all`)))
       .children(links)
       .children(this.drag?.moved ? [...pets.filter((_, i) => seated[i].address !== this.drag.addr), ...pets.filter((_, i) => seated[i].address === this.drag.addr)] : pets)
       .when(Boolean(this.notice), (el) => {
-        const box = v_flex().id("oc-notice").absolute().left(8).right(8).top(horizon + 6).px(8).py(6).gap(6).bg("#11111bee").border_1().border_color("#89b4fa").text_size(11).text_color("#cdd6f4")
+        const box = v_flex().id("oc-notice").absolute().left(8).right(8).top(horizon + 6).px(8).py(6).gap(6).bg(hqShade("#11111bee")).border_1().border_color("#89b4fa").text_size(11).text_color("#cdd6f4")
           .on_mouse_down("left", (_e, cx) => cx.stop_propagation());
         return el.child(box.cursor_pointer().on_click((_e, cx) => { this.notice = null; cx.notify(); }).child(this.notice));
       })
-      .when(settledCount > 0, (el) => el.child(div().id("settled-undo").absolute().right(8).top(this.notice ? horizon + 84 : horizon + 6).px(8).py(3).bg("#11111bdd").border_1().border_color("#45475a").text_size(11).text_color("#a6e3a1").cursor_pointer()
+      .when(settledCount > 0, (el) => el.child(div().id("settled-undo").absolute().right(8).top(this.notice ? horizon + 84 : horizon + 6).px(8).py(3).bg(hqShade("#11111bdd")).border_1().border_color(hqShade("#45475a")).text_size(11).text_color("#a6e3a1").cursor_pointer()
         .tooltip("Bring settled staff back on every floor")
         .on_click((_e, cx) => { this.settled.clear(); try { localStorage.removeItem("settled"); } catch { /* storage disabled: next render retries */ } cx.notify(); })
         .child(`✓ ${settledCount} settled`)));
@@ -2234,8 +2239,8 @@ export default class Agents extends View {
       .text_size(13)
       .when(!collapsed, (el) =>
         el.child(div().px(10).pt(10).pb(2).flex_none().child(
-          div().relative().h(30).w_full().child(div().absolute().left(2).right(2).bottom(-2).h(2).bg("#11111b"))
-            .children(frame("#45475a", "#181825"))
+          div().relative().h(30).w_full().child(div().absolute().left(2).right(2).bottom(-2).h(2).bg(hqShade("#11111b")))
+            .children(frame(hqShade("#45475a"), hqShade("#181825")))
             .child(h_flex().size_full().px(10).gap(8).items_center().justify_between()
               .child(h_flex().min_w(0).gap(7).items_center().child(corgi)
                 .child(div().min_w(0).truncate().font_family(mono).font_bold().text_size(10).text_color("#89b4fa").child("ENGINEERING FLOOR")))
@@ -2244,7 +2249,7 @@ export default class Agents extends View {
                   .tooltip(`${blockedAll.length} ${blockedAll.length === 1 ? "agent needs" : "agents need"} you · open the list`)
                   .on_click(() => this.openNeedsYou())
                   .children([[6, 0, 2, 1], [4, 1, 6, 1], [3, 2, 8, 1], [2, 3, 10, 7], [1, 10, 12, 2], [0, 12, 14, 1], [5, 13, 4, 1], [6, 14, 2, 1]].map(([x, y, w, h]) => div().absolute().left(x).top(y).w(w).h(h).bg("#f9e2af")))
-                  .child(div().absolute().right(-5).top(-5).min_w(10).h(10).px(2).border_1().border_color("#11111b").bg("#f38ba8").flex().items_center().justify_center().text_size(7.5).font_bold().text_color("#11111b").child(String(blockedAll.length)))))
+                  .child(div().absolute().right(-5).top(-5).min_w(10).h(10).px(2).border_1().border_color(hqShade("#11111b")).bg("#f38ba8").flex().items_center().justify_center().text_size(7.5).font_bold().text_color(hqShade("#11111b")).child(String(blockedAll.length)))))
                 .when(Boolean(this.fileError), (el) => el.child(div().id("ag-file-error").text_size(11).font_bold().text_color(t.blocked)
                   .tooltip(`${this.fileError}. Using the last good figures.`).child("!")))
                 .child(div().id("ag-hire").relative().w(14).h(14).flex_none().cursor_pointer()
@@ -2277,24 +2282,24 @@ export default class Agents extends View {
       )
       .when(!collapsed && this.hiring.open, (el) => {
         const h = this.hiring;
-        const box = (state) => div().w_full().h(26).px(8).flex().items_center().bg("#181825").border_1().border_color("#45475a")
+        const box = (state) => div().w_full().h(26).px(8).flex().items_center().bg(hqShade("#181825")).border_1().border_color(hqShade("#45475a"))
           .child(Input.new(state).h_full().w_full().text_size(11.5).font_family(mono).text_color(t.foreground));
         const btn = (id, text, fill, ink, act) => div().id(id).px(10).h(24).flex().items_center().cursor_pointer().bg(fill).text_size(10.5).font_family(mono).font_bold().text_color(ink).on_click(act).child(text);
-        return el.child(div().relative().mx(10).mt(8).flex_none().children(frame("#89b4fa", "#11111b"))
+        return el.child(div().relative().mx(10).mt(8).flex_none().children(frame("#89b4fa", hqShade("#11111b")))
           .child(v_flex().px(12).py(10).gap(6)
             .child(div().font_family(mono).font_bold().text_size(10).text_color("#89b4fa").child("HIRE STAFF · NEW WORKTREE"))
             .child(box(this.ticketInput))
             .child(box(this.repoInput))
             .child(h_flex().gap(4).flex_wrap().children(["claude", "codex", "opencode", "agy", "hermes"].map((pg) => div().id(`hire-${pg}`).px(8).h(22).flex().items_center().cursor_pointer().border_1()
-              .border_color(h.program === pg ? "#89b4fa" : "#45475a").bg(h.program === pg ? "#89b4fa22" : "#181825").text_size(10.5).font_family(mono).text_color(h.program === pg ? "#89b4fa" : "#a6adc8")
+              .border_color(h.program === pg ? "#89b4fa" : hqShade("#45475a")).bg(h.program === pg ? "#89b4fa22" : hqShade("#181825")).text_size(10.5).font_family(mono).text_color(h.program === pg ? "#89b4fa" : "#a6adc8")
               .on_click((_e, cx) => { h.program = pg; cx.notify(); }).child(pg))))
             .when(Boolean(h.error), (e2) => e2.child(div().text_size(10.5).text_color("#ff5370").child(h.error)))
-            .child(h_flex().gap(6).child(btn("hire-go", h.busy ? "Creating..." : "Hire", "#89b4fa", "#11111b", (_e, cx) => this.doHire(cx)))
-              .child(btn("hire-cancel", "Cancel", "#313244", "#cdd6f4", (_e, cx) => this.openHire(cx))))));
+            .child(h_flex().gap(6).child(btn("hire-go", h.busy ? "Creating..." : "Hire", "#89b4fa", hqShade("#11111b"), (_e, cx) => this.doHire(cx)))
+              .child(btn("hire-cancel", "Cancel", hqShade("#313244"), "#cdd6f4", (_e, cx) => this.openHire(cx))))));
       })
       .when(!collapsed, (el) => el.child(div().id("staff-search").relative().mx(10).mt(4).mb(8).h(32).flex_none()
-        .child(div().absolute().left(2).right(2).bottom(-2).h(2).bg("#11111b"))
-        .children(frame(this.typing ? "#89b4fa" : "#45475a", "#11111b"))
+        .child(div().absolute().left(2).right(2).bottom(-2).h(2).bg(hqShade("#11111b")))
+        .children(frame(this.typing ? "#89b4fa" : hqShade("#45475a"), hqShade("#11111b")))
         .child(h_flex().size_full().px(10).gap(8).items_center()
           .child(magnifier(this.typing ? "#89b4fa" : "#7f849c"))
           .child(div().flex_1().min_w(0).h_full().flex().items_center().cursor_text().on_mouse_down("left", (_e, cx) => cx.stop_propagation())
