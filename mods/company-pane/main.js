@@ -1,6 +1,6 @@
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex, InputState, Input } from "gpui-base";
-import { panes, props, run, theme, home, layout, shared, setShared, appHome, readTextFile, writeTextFile } from "herdr";
+import { panes, terminals, props, run, theme, home, layout, shared, setShared, appHome, readTextFile, writeTextFile } from "herdr";
 import { agentOf, duckMood, duckWidth, mood } from "./duck.js";
 
 const MONO = "JetBrains Mono";
@@ -113,7 +113,9 @@ export default class CompanyPane extends View {
           .children(box(t.raised, t.chrome, t.surface))
           .font_family(MONO).font_bold().text_size(11).text_color(t.muted).child(">_");
     const custom = (shared("pixel-hq.names") ?? {})[pane] ?? {};
-    const title = custom.name ?? ((((p.program?.agent || p.program?.shell) && p.program.name) || p.title || p.program?.name) || "shell");
+    // The name it was started with (`hc run --name implementer`), as its desk in the office shows it.
+    const hcName = terminals().find((k) => k.address === p.terminal)?.name;
+    const title = custom.name ?? hcName ?? ((((p.program?.agent || p.program?.shell) && p.program.name) || p.title || p.program?.name) || "shell");
     const chip = (text, color, iconEl) => h_flex().flex_none().gap(5).px(7).h(20).items_center().relative()
       .children(notch(color + "22", [0, 0, 0, 0]))
       .child(div().absolute().left(1).right(1).top(0).h(1).bg(color + "66"))
