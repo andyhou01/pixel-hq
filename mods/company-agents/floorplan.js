@@ -35,6 +35,13 @@ export function floorTeams(addrs, parentOf) {
   return addrs.filter((a) => byLead.has(a)).map((a) => byLead.get(a));
 }
 
+// The live sub-agents (terminals it started with `hc run`) that sit at an agent's desk as
+// interns: only those with no desk of their own. One with a pane is in `desks` and gets its
+// own (smaller) desk on the floor instead, in its lead's team.
+export function deskInterns(terminals, addr, desks) {
+  return terminals.filter((k) => k.parent === addr && k.state === "live" && !desks.has(k.address));
+}
+
 const chunk = (xs, n) => {
   const out = [];
   for (let i = 0; i < xs.length; i += n) out.push(xs.slice(i, i + n));

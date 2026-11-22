@@ -10,7 +10,7 @@ import { scene, sceneLayout, yHorizon } from "./scene.js";
 import { Editor } from "./editor.js";
 import { checkPixelHqUpdate, executePixelHqUpdate } from "./updater.js";
 import { snapshot, clashes, hire, agentTaskArgv } from "./crew.js";
-import { FLOOR_PLANS, planOf, floorTeams, planRows, planSpots, cubicleSpot } from "./floorplan.js";
+import { FLOOR_PLANS, planOf, floorTeams, planRows, planSpots, cubicleSpot, deskInterns } from "./floorplan.js";
 
 // Pixel HQ's dark greys follow the theme (themes/pixel-hq.json, themes/pixel-hq-black.json):
 // each Catppuccin shade maps to a theme colour, and keeps its alpha.
@@ -93,14 +93,15 @@ const SECTION_STATUS = { 4: "blocked", 3: "done", 2: "working" };
 
 // How much is going on at each desk, from any agent that reports it: Hermes through its plugin, Claude Code through a hook
 // (see README). Interns: running sub-agents (agent.threads) plus the live child terminals the agent started with `hc run`
-// (each in its own species and mood). Runners and the server rack: shell work (agent.jobs: commands in flight plus background
+// that have no desk of their own (each in its own species and mood); one with a pane has its own desk instead. Runners and the server rack: shell work (agent.jobs: commands in flight plus background
 // processes). A job turns amber past a minute: agent.jobs_long says how many, or agent.jobs_started lists start times (ms)
 // for reporters that only run when a job starts or ends.
 function activityAll(all) {
+  const desks = new Set(agents().map((a) => a.address));
   return new Map(all.map((k) => {
     const labels = k.labels ?? {};
     const n = (v) => { const x = Number.parseInt(v, 10); return Number.isFinite(x) && x > 0 ? x : 0; };
-    const kids = all.filter((c) => c.parent === k.address && c.state === "live");
+    const kids = deskInterns(all, k.address, desks);
     const interns = [
       ...Array.from({ length: Math.min(n(labels["agent.threads"]), 50) }, () => ({ status: "working", species: speciesOf(progOf(k)) })),
       ...kids.map((c) => ({ status: String(c.status?.state ?? c.status ?? "idle"), species: speciesOf(progOf(c)) })),
@@ -1643,10 +1644,9 @@ export default class Agents extends View {
     this.track(list, now, cx);
     this.watch(list, now);
     this.hold(list);
-    // A kept sub-agent (one with a pane) is in agents() too: where a tree shows
-    // it, it gets no row of its own, unless it's pinned.
-    const nested = new Set(collapsed ? [] : list.flatMap((a) => this.tree(all, a.address).map((s) => s.t.address)));
-    list = list.filter((a) => a.pinned || !nested.has(a.address));
+    // A kept sub-agent (one with a pane) is in agents() too, and gets a desk of its own: a smaller
+    // one, in its lead's team on the floor plan. Only sub-agents without a pane sit at their
+    // lead's desk, as interns.
     // Each floor is its own office: only the agents of the shown space sit here.
     const activeId = spaces().find((x) => x.active)?.id;
     const settledFloor = activeId ? (settledBySpace.get(activeId) ?? 0) : settledCount;

@@ -17,6 +17,19 @@ async function runTests() {
   ]);
   console.log("PASS: floorTeams groups desks under their topmost lead on the floor");
 
+  // Workers with a pane (t1b, t1c) have desks of their own; only the paneless t1d is an intern.
+  const terms = [
+    { address: "t1b", parent: "t1", state: "live" },
+    { address: "t1c", parent: "t1", state: "live" },
+    { address: "t1d", parent: "t1", state: "live" },
+    { address: "t1f", parent: "t1", state: "finished" },
+    { address: "t1g", parent: "t1c", state: "live" },
+  ];
+  const desks = new Set(["t1", "t1b", "t1c"]);
+  assert.deepStrictEqual(fp.deskInterns(terms, "t1", desks).map((k) => k.address), ["t1d"]);
+  assert.deepStrictEqual(fp.deskInterns(terms, "t1c", desks).map((k) => k.address), ["t1g"]);
+  console.log("PASS: deskInterns keeps sub-agents with their own desk off their lead's desk");
+
   const crew = [{ lead: "L", team: ["a", "b", "c", "d"] }, { lead: "s", team: [] }];
   const rows = (plan, cols) => fp.planRows(plan, crew, cols).rows;
   assert.strictEqual(fp.planRows("cubicles", crew, 2), null);
