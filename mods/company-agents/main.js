@@ -15,7 +15,9 @@ import { FLOOR_PLANS, planOf, floorTeams, planRows, planSpots, cubicleSpot, desk
 // Pixel HQ's dark greys follow the theme (themes/pixel-hq.json, themes/pixel-hq-black.json):
 // each Catppuccin shade maps to a theme colour, and keeps its alpha.
 const HQ_SHADE = { "#11111b": "canvas", "#0f111a": "canvas", "#181825": "chrome", "#1e1e2e": "background", "#262637": "surface", "#313244": "raised", "#45475a": "ansi0", "#585b70": "ansi8" };
-const hqShade = (hex) => { const c = theme()?.[HQ_SHADE[hex.slice(0, 7)]]; return typeof c === "string" && c.startsWith("#") ? c.slice(0, 7) + hex.slice(7) : hex; };
+// The theme render() read: theme() copies the whole theme in from the host on every call, too slow to repeat per shade.
+let shadeTheme = null;
+const hqShade = (hex) => { const c = (shadeTheme ?? theme())?.[HQ_SHADE[hex.slice(0, 7)]]; return typeof c === "string" && c.startsWith("#") ? c.slice(0, 7) + hex.slice(7) : hex; };
 
 // The plan each floor (space) uses: { [space id]: { plan, at } }; `at` marks a fresh pick,
 // which clears the desks dragged on that floor.
@@ -1610,6 +1612,7 @@ export default class Agents extends View {
 
   render(cx) {
     const t = theme();
+    shadeTheme = t;
     if (props()?.sortMenu) return this.sortMenu(t);
     if (props()?.floorMenu) return this.floorMenu(t);
     if (props()?.needsYou) return this.needsYou(t);
@@ -1745,7 +1748,6 @@ export default class Agents extends View {
     }
 
     const row = (a, i, subs = []) => {
-      const pic = figureFor(a.space_name, a.status, 45, this.waitOf(a.address, a.status, now), speciesOf(progOf(a)));
       const more = detail.get(a.address);
       // An agent on another machine (`vps/t7`) says which.
       const machine = a.address.includes("/") ? a.address.split("/")[0] : null;
@@ -1762,6 +1764,7 @@ export default class Agents extends View {
           .child(div().flex_1().min_w(0).whitespace_nowrap().text_right().text_color(t.muted).child(String(i + 1)))
           .child(h_flex().w(14).flex_none().items_center().justify_center().child(this.status(t, a, true)));
       }
+      const pic = figureFor(a.space_name, a.status, 45, this.waitOf(a.address, a.status, now), speciesOf(progOf(a)));
       const when = this.since(a);
       const idle = a.status === "idle" && !a.focused;
       const isPinned = a.pinned;
@@ -1860,7 +1863,9 @@ export default class Agents extends View {
           .when(!byPriority && top && top !== "idle", (el) => el.child(this.status(t, { status: top }, true)))
           .child(svg("mods/company-agents/chevron-right.svg").size(11).flex_none().text_color(t.dim)));
     };
-    const rows = collapsed
+    // Built only where the list shows (the collapsed rail): the wide panel shows the office instead, and building
+    // rows there too (a figure per agent and sub-agent) pushed busy floors past Herdr's render time limit.
+    const rows = () => collapsed
       ? list.flatMap(withKids)
       : groups.flatMap((g) => [header(g), ...(this.folded.has(g.id) ? [] : g.members.flatMap(withKids))]);
 
@@ -2300,7 +2305,7 @@ export default class Agents extends View {
             .child(h_flex().gap(6).child(btn("hire-go", h.busy ? "Creating..." : "Hire", "#89b4fa", hqShade("#11111b"), (_e, cx) => this.doHire(cx)))
               .child(btn("hire-cancel", "Cancel", hqShade("#313244"), "#cdd6f4", (_e, cx) => this.openHire(cx))))));
       })
-      .child(collapsed ? v_flex().id("ag-list").flex_1().min_h(0).px(0).overflow_y_scrollbar().mode("always").children(rows) : farm)
+      .child(collapsed ? v_flex().id("ag-list").flex_1().min_h(0).px(0).overflow_y_scrollbar().mode("always").children(rows()) : farm)
       .when(collapsed && settledCount > 0, (el) => el.child(h_flex().h(22).px(6).items_center().child(div().id("settled-undo-rail").px(6).h(17).flex().items_center().border_1().border_color("#a6e3a155").bg("#a6e3a122").text_size(10).text_color("#a6e3a1").cursor_pointer()
         .tooltip("Bring settled staff back on every floor")
         .on_click((_e, cx) => { this.settled.clear(); try { localStorage.removeItem("settled"); } catch { /* storage disabled: next render retries */ } cx.notify(); })

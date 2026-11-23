@@ -16,8 +16,10 @@ const neutralTheme = () => {
   const c = m.slice(1).map((h) => parseInt(h, 16));
   return Math.max(...c) - Math.min(...c) < 8;
 };
+// Set once per scene(): theme() copies the whole theme in from the host on every call, and tone() runs for every floor line.
+let neutral = false;
 const tone = (hex) => {
-  if (!neutralTheme()) return hex;
+  if (!neutral) return hex;
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
   const y = Math.round((0.299 * r + 0.587 * g + 0.114 * b) * 0.75).toString(16).padStart(2, "0");
   return `#${y}${y}${y}${hex.slice(7)}`;
@@ -197,6 +199,7 @@ export function sceneLayout(W, H) {
 // A boolean is the old signature (music playing).
 export function scene(W, H, opts = {}) {
   if (typeof opts === "boolean") opts = { music: opts };
+  neutral = neutralTheme();
   const Lo = sceneLayout(W, H);
   ({ W, H } = Lo);
   const { yH, base, wins, buildings, cx, cy, rr } = Lo;
